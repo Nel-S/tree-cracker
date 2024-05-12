@@ -12,11 +12,12 @@ struct Coordinate {
 };
 
 // An inclusive range of 32-bit integers.
-// The range can be nullified (meaning contains() always returns true) by setting lowerBound to -1.
 struct IntInclusiveRange {
 	int32_t lowerBound, upperBound;
+	static constexpr int32_t NO_MINIMUM = INT32_MIN;
+	static constexpr int32_t NO_MAXIMUM = INT32_MAX;
 
-	__device__ constexpr IntInclusiveRange() noexcept : lowerBound(INT32_MIN), upperBound(INT32_MAX) {}
+	__device__ constexpr IntInclusiveRange() noexcept : lowerBound(this->NO_MINIMUM), upperBound(this->NO_MAXIMUM) {}
 	__device__ constexpr IntInclusiveRange(const IntInclusiveRange &other) noexcept : lowerBound(other.lowerBound), upperBound(other.upperBound) {}
 	__device__ constexpr IntInclusiveRange(int32_t value) noexcept : lowerBound(value), upperBound(value) {}
 	__device__ constexpr IntInclusiveRange(int32_t lowerBound, int32_t upperBound) noexcept : lowerBound(std::min(lowerBound, upperBound)), upperBound(std::max(lowerBound, upperBound)) {}
@@ -31,13 +32,6 @@ struct IntInclusiveRange {
 	// Returns the range's range.
 	__device__ constexpr int32_t getRange() const noexcept {
 		return this->upperBound - this->lowerBound + 1;
-	}
-
-	__host__ void printRangeComparison(const IntInclusiveRange &originalRange, const IntInclusiveRange &allowedBounds) const noexcept {	
-		if (SILENT_MODE) return;
-		if (!this->contains(originalRange.lowerBound)) std::fprintf(stderr, "WARNING: Input's lower bound (%" PRId32 ") fell outside of allowed range [%" PRId32 ", %" PRId32 "] and so was replaced with %" PRId32 ".\n", originalRange.lowerBound, allowedBounds.lowerBound, allowedBounds.upperBound, this->lowerBound);
-		if (!this->contains(originalRange.upperBound)) std::fprintf(stderr, "WARNING: Input's upper bound (%" PRId32 ") fell outside of allowed range [%" PRId32 ", %" PRId32 "] and so was replaced with %" PRId32 ".\n", originalRange.upperBound, allowedBounds.lowerBound, allowedBounds.upperBound, this->upperBound);
-	
 	}
 };
 typedef IntInclusiveRange PossibleHeightsRange;

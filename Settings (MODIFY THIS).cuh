@@ -98,7 +98,7 @@ constexpr InputData INPUT_DATA[] = {
 	// 	Biome::Taiga,     // The biome the coordinate above is within. (Should be Taiga.)
 	// 	PossibleHeightsRange(6), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [6,10].)
 	// 	PossibleRadiiRange(4),   // The number of layers of leaves. If the two bottommost layers of leaves are identical, add an extra 1 to the total. Supports ranges if there is uncertainty. (Should be in the range [4,5].)
-	// 	PossibleHeightsRange(1), // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
+	// 	PossibleRadiiRange(1), // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
 	// },
 	// /* ----- END OF AN EXAMPLE PINE TREE ----- */
 

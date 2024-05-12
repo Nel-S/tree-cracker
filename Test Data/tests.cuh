@@ -451,7 +451,7 @@ constexpr InputData TEST_DATA_4[] = {
 		PossibleHeightsRange(8), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". Supports ranges if there is uncertainty. (Should be in the range [4,9].)
 		PossibleHeightsRange(1), // The number of logs visible between the ground and the y-level where leaves begin generating. Supports ranges if there is uncertainty. (Should be in the range [1,2].)
 		PossibleHeightsRange(2), // The number of layers of leaves above the trunk. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
-		PossibleRadiiRange(3, INT32_MAX),   // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [2,3].)
+		PossibleRadiiRange(3, PossibleRadiiRange::NO_MAXIMUM),   // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [2,3].)
 		PossibleRadiiRange(0)    // The radius of the topmost layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [0,1].)
 	},
 	{
@@ -461,7 +461,7 @@ constexpr InputData TEST_DATA_4[] = {
 		Biome::Taiga,     // The biome the coordinate above is within. (Should be Taiga.)
 		PossibleHeightsRange(10), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [6,10].)
 		PossibleRadiiRange(5),   // The number of layers of leaves. If the two bottommost layers of leaves are identical, add an extra 1 to the total. Supports ranges if there is uncertainty. (Should be in the range [4,5].)
-		PossibleHeightsRange(2), // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
+		PossibleRadiiRange(2), // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
 	},
 	{
 		Version::v1_8_9, // The Minecraft version the tree was generated under.
@@ -470,7 +470,7 @@ constexpr InputData TEST_DATA_4[] = {
 		Biome::Taiga,     // The biome the coordinate above is within. (Should be Taiga.)
 		PossibleHeightsRange(10), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [6,10].)
 		PossibleRadiiRange(5),   // The number of layers of leaves. If the two bottommost layers of leaves are identical, add an extra 1 to the total. Supports ranges if there is uncertainty. (Should be in the range [4,5].)
-		PossibleHeightsRange(3, INT32_MAX), // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
+		PossibleRadiiRange(3, PossibleRadiiRange::NO_MAXIMUM), // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
 	},
 	{
 		Version::v1_8_9, // The Minecraft version the tree was generated under.
@@ -479,7 +479,7 @@ constexpr InputData TEST_DATA_4[] = {
 		Biome::Taiga,     // The biome the coordinate above is within. (Should be Taiga.)
 		PossibleHeightsRange(8), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [6,10].)
 		PossibleRadiiRange(4),   // The number of layers of leaves. If the two bottommost layers of leaves are identical, add an extra 1 to the total. Supports ranges if there is uncertainty. (Should be in the range [4,5].)
-		PossibleHeightsRange(2, INT32_MAX), // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
+		PossibleRadiiRange(2, PossibleRadiiRange::NO_MAXIMUM), // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
 	},
 };
 
@@ -487,7 +487,6 @@ constexpr InputData TEST_DATA_4[] = {
 // 1.7, seed: ??
 // From Rehorted
 constexpr InputData TEST_DATA_5[] = {
-	// Chunk one
 	{
 		Version::v1_8_9, // The Minecraft version the tree was generated under.
 		TreeType::Spruce, // The type of tree it is.
@@ -496,7 +495,7 @@ constexpr InputData TEST_DATA_5[] = {
 		PossibleHeightsRange(8), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". Supports ranges if there is uncertainty. (Should be in the range [4,9].)
 		PossibleHeightsRange(1), // The number of logs visible between the ground and the y-level where leaves begin generating. Supports ranges if there is uncertainty. (Should be in the range [1,2].)
 		PossibleHeightsRange(1), // The number of layers of leaves above the trunk. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
-		PossibleRadiiRange(3, INT32_MAX),   // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [2,3].)
+		PossibleRadiiRange(3, PossibleRadiiRange::NO_MAXIMUM),   // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [2,3].)
 		PossibleRadiiRange(1)    // The radius of the topmost layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [0,1].)
 	},
 	{
@@ -507,7 +506,7 @@ constexpr InputData TEST_DATA_5[] = {
 		PossibleHeightsRange(5), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". Supports ranges if there is uncertainty. (Should be in the range [4,9].)
 		PossibleHeightsRange(1), // The number of logs visible between the ground and the y-level where leaves begin generating. Supports ranges if there is uncertainty. (Should be in the range [1,2].)
 		PossibleHeightsRange(2), // The number of layers of leaves above the trunk. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
-		PossibleRadiiRange(2, INT32_MAX),   // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [2,3].)
+		PossibleRadiiRange(2, PossibleRadiiRange::NO_MAXIMUM),   // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [2,3].)
 		PossibleRadiiRange(0)    // The radius of the topmost layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [0,1].)
 	},
 	{
@@ -518,7 +517,7 @@ constexpr InputData TEST_DATA_5[] = {
 		PossibleHeightsRange(9), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". Supports ranges if there is uncertainty. (Should be in the range [4,9].)
 		PossibleHeightsRange(2), // The number of logs visible between the ground and the y-level where leaves begin generating. Supports ranges if there is uncertainty. (Should be in the range [1,2].)
 		PossibleHeightsRange(1), // The number of layers of leaves above the trunk. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
-		PossibleRadiiRange(3, INT32_MAX),   // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [2,3].)
+		PossibleRadiiRange(3, PossibleRadiiRange::NO_MAXIMUM),   // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [2,3].)
 		PossibleRadiiRange(1)    // The radius of the topmost layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [0,1].)
 	},
 	{
@@ -528,7 +527,7 @@ constexpr InputData TEST_DATA_5[] = {
 		Biome::Taiga,     // The biome the coordinate above is within. (Should be Taiga.)
 		PossibleHeightsRange(10), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [6,10].)
 		PossibleRadiiRange(4),   // The number of layers of leaves. If the two bottommost layers of leaves are identical, add an extra 1 to the total. Supports ranges if there is uncertainty. (Should be in the range [4,5].)
-		PossibleHeightsRange(2, INT32_MAX), // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
+		PossibleRadiiRange(2, PossibleRadiiRange::NO_MAXIMUM), // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
 	},
 	{
 		Version::v1_8_9, // The Minecraft version the tree was generated under.
@@ -537,9 +536,9 @@ constexpr InputData TEST_DATA_5[] = {
 		Biome::Taiga,     // The biome the coordinate above is within. (Should be Taiga.)
 		PossibleHeightsRange(7), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [6,10].)
 		PossibleRadiiRange(4),   // The number of layers of leaves. If the two bottommost layers of leaves are identical, add an extra 1 to the total. Supports ranges if there is uncertainty. (Should be in the range [4,5].)
-		PossibleHeightsRange(2, INT32_MAX), // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
+		PossibleRadiiRange(2, PossibleRadiiRange::NO_MAXIMUM), // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
 	},
-	// Chunk two
+
 	{
 		Version::v1_8_9, // The Minecraft version the tree was generated under.
 		TreeType::Spruce, // The type of tree it is.
@@ -559,7 +558,7 @@ constexpr InputData TEST_DATA_5[] = {
 		PossibleHeightsRange(4, 7), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". Supports ranges if there is uncertainty. (Should be in the range [4,9].)
 		PossibleHeightsRange(1, 2), // The number of logs visible between the ground and the y-level where leaves begin generating. Supports ranges if there is uncertainty. (Should be in the range [1,2].)
 		PossibleHeightsRange(), // The number of layers of leaves above the trunk. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
-		PossibleRadiiRange(2, INT32_MAX),   // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [2,3].)
+		PossibleRadiiRange(2, PossibleRadiiRange::NO_MAXIMUM),   // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [2,3].)
 		PossibleRadiiRange()    // The radius of the topmost layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [0,1].)
 	},
 	{
@@ -581,7 +580,7 @@ constexpr InputData TEST_DATA_5[] = {
 		PossibleHeightsRange(6, 7), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". Supports ranges if there is uncertainty. (Should be in the range [4,9].)
 		PossibleHeightsRange(2), // The number of logs visible between the ground and the y-level where leaves begin generating. Supports ranges if there is uncertainty. (Should be in the range [1,2].)
 		PossibleHeightsRange(1, 2), // The number of layers of leaves above the trunk. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
-		PossibleRadiiRange(2, INT32_MAX),   // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [2,3].)
+		PossibleRadiiRange(2, PossibleRadiiRange::NO_MAXIMUM),   // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [2,3].)
 		PossibleRadiiRange(0)    // The radius of the topmost layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [0,1].)
 	},
 	{
@@ -591,7 +590,7 @@ constexpr InputData TEST_DATA_5[] = {
 		Biome::Taiga,     // The biome the coordinate above is within. (Should be Taiga.)
 		PossibleHeightsRange(8, 9), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [6,10].)
 		PossibleRadiiRange(4),   // The number of layers of leaves. If the two bottommost layers of leaves are identical, add an extra 1 to the total. Supports ranges if there is uncertainty. (Should be in the range [4,5].)
-		PossibleHeightsRange(2, INT32_MAX), // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
+		PossibleRadiiRange(2, PossibleRadiiRange::NO_MAXIMUM), // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
 	},
 	{
 		Version::v1_8_9, // The Minecraft version the tree was generated under.
@@ -600,7 +599,7 @@ constexpr InputData TEST_DATA_5[] = {
 		Biome::Taiga,     // The biome the coordinate above is within.
 		PossibleHeightsRange(), // If known, the height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)", or in the worst-case scenario leave the range blank entirely.
 	},
-	// Chunk three
+
 	{
 		Version::v1_8_9, // The Minecraft version the tree was generated under.
 		TreeType::Pine,   // The type of tree it is.
@@ -608,35 +607,76 @@ constexpr InputData TEST_DATA_5[] = {
 		Biome::Taiga,     // The biome the coordinate above is within. (Should be Taiga.)
 		PossibleHeightsRange(6), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [6,10].)
 		PossibleRadiiRange(4),   // The number of layers of leaves. If the two bottommost layers of leaves are identical, add an extra 1 to the total. Supports ranges if there is uncertainty. (Should be in the range [4,5].)
-		PossibleHeightsRange(2, INT32_MAX), // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
+		PossibleRadiiRange(2, PossibleRadiiRange::NO_MAXIMUM), // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
 	},
 	{
 		Version::v1_8_9, // The Minecraft version the tree was generated under.
 		TreeType::Pine,   // The type of tree it is.
 		Coordinate(-82, 358), // The x- and z-coordinate of the tree.
 		Biome::Taiga,     // The biome the coordinate above is within. (Should be Taiga.)
-		PossibleHeightsRange(7, INT32_MAX), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [6,10].)
+		PossibleHeightsRange(7, PossibleHeightsRange::NO_MAXIMUM), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [6,10].)
 		PossibleRadiiRange(5),   // The number of layers of leaves. If the two bottommost layers of leaves are identical, add an extra 1 to the total. Supports ranges if there is uncertainty. (Should be in the range [4,5].)
-		PossibleHeightsRange(1), // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
+		PossibleRadiiRange(1), // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
 	},
 	{
 		Version::v1_8_9, // The Minecraft version the tree was generated under.
 		TreeType::Pine,   // The type of tree it is.
 		Coordinate(-87, 359), // The x- and z-coordinate of the tree.
 		Biome::Taiga,     // The biome the coordinate above is within. (Should be Taiga.)
-		PossibleHeightsRange(6, INT32_MAX), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [6,10].)
+		PossibleHeightsRange(6, PossibleHeightsRange::NO_MAXIMUM), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [6,10].)
 		PossibleRadiiRange(5),   // The number of layers of leaves. If the two bottommost layers of leaves are identical, add an extra 1 to the total. Supports ranges if there is uncertainty. (Should be in the range [4,5].)
-		PossibleHeightsRange(2), // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
+		PossibleRadiiRange(2), // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
 	},
 	{
 		Version::v1_8_9, // The Minecraft version the tree was generated under.
 		TreeType::Pine,   // The type of tree it is.
 		Coordinate(-87, 351), // The x- and z-coordinate of the tree.
 		Biome::Taiga,     // The biome the coordinate above is within. (Should be Taiga.)
-		PossibleHeightsRange(10, INT32_MAX), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [6,10].)
+		PossibleHeightsRange(10, PossibleHeightsRange::NO_MAXIMUM), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [6,10].)
 		PossibleRadiiRange(5),   // The number of layers of leaves. If the two bottommost layers of leaves are identical, add an extra 1 to the total. Supports ranges if there is uncertainty. (Should be in the range [4,5].)
-		PossibleHeightsRange(3, INT32_MAX), // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
+		PossibleRadiiRange(3, PossibleRadiiRange::NO_MAXIMUM), // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. Supports ranges if there is uncertainty. (Should be in the range [1,3].)
 	},
 };
 
 
+// Seed: 123
+constexpr InputData TEST_DATA_7[] = {
+
+};
+
+
+// Seed: 123
+constexpr InputData TEST_DATA_8[] = {
+
+};
+
+
+// Seed: -5141540374460396599
+// From Advent
+constexpr InputData TEST_DATA_9[] = {
+
+};
+
+
+// Seed: 123
+constexpr InputData TEST_DATA_10[] = {
+
+};
+
+
+// Seed: ??
+constexpr InputData TEST_DATA_11[] = {
+
+};
+
+
+// "Some random map from Minecraft: Story Mode", seed: 2234065947811606375
+constexpr InputData TEST_DATA_12[] = {
+
+};
+
+
+// Seed: -3453423927651724977
+constexpr InputData TEST_DATA_13[] = {
+
+};

@@ -7,11 +7,12 @@ Given details about a set of Minecraft trees (such as their coordinates, types, 
 
 To install the program:
 1. Download the repository, either as a ZIP file or by cloning it through Git.
-2. Open [the Settings file](./Settings%20(MODIFY%20THIS).cuh) in one's favorite code editor, and replace the examples of input data with your own, and the settings with your own. (For enumerations like `Version` or `Biome`, the list of supported values can be found in [./AllowedValuesForSettings.cuh].)
+2. Open [the Settings file](./Settings%20(MODIFY%20THIS).cuh) in one's favorite code editor, and replace the examples of input data with your own, and the settings with your own. (For enumerations like `Version` or `Biome`, the list of supported values can be found in [AllowedValuesForSettings.cuh](./AllowedValuesForSettings.cuh).)
 3. If you do not have a CUDA GPU on your own computer, you can use one for free (subject to certain runtime limits) on [Google Colab](https://colab.research.google.com).
     1. Visit the website, log in with your Google account, and create a new notebook.
     2. Open the Files sidebar and upload the program's files, including the modified Settings file.
     3. Under the Runtime tab, select "Change runtime type" and select T4 GPU as the hardware accelerator.
+
 Otherwise if you do have a CUDA GPU on your own computer, make sure [nvcc](https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html) is installed.
 4. In a terminal, navigate to the folder where the program's files are contained:
 ```bash
@@ -35,7 +36,7 @@ If all goes well, a file should be created (or a list should be printed to the s
 
 ## Limitations
 At the time of writing, this program only supports
-- Versions 1.6.4, 1.8.9, 1.12.2, 1.14.4, 1.16.1, or 1.16.4.
+- Versions 1.6.4, 1.8.9, 1.12.2, 1.14.4, 1.16.1, or 1.16.4. (Informally, if a specific version isn't supported, setting the relevant data to the next chronological supported version&mdash;e.g. marking 1.7 as 1.8.9&mdash;will sometimes still yield results.)
 - Oak (normal or large), Spruce, Pine, or Birch trees.
 - Forest, Birch Forest, or Taiga biomes.
 If you would like to add support for another version, tree type, or biome, or otherwise improve this code or report a bug with it, please feel free to open a pull request.
@@ -48,6 +49,6 @@ I would like to give a very large Thank You to
 - Cortex and TatertotGr8, for their tree crackers that predate even Andrew's ([Cortex's](https://github.com/MCRcortex/TreeCracker), [TatertotGr8's](https://github.com/TatertotGr8/Treecracker))
 - Epic10l2, for his [comprehensive guide to Andrew's TreeCracker](https://docs.google.com/document/d/1csrcO2F4qQ2ahYgcicWmJtnfeU99q65p) that enabled me to learn how to use the program.
 - Cubitect, for his [Cubiomes library](https://github.com/Cubitect/cubiomes) that this program uses to filter biomes.
-- Panda4994, for [his algorithm]((https://github.com/Panda4994/panda4994.github.io/blob/48526d35d3d38750102b9f360dff45a4bdbc50bd/seedinfo/js/Random.js#L16)) to determine if a state could be derived from a nextLong call.
+- Panda4994, for [his algorithm]((https://github.com/Panda4994/panda4994.github.io/blob/48526d35d3d38750102b9f360dff45a4bdbc50bd/seedinfo/js/Random.js#L16)) to determine if a state is derivable from a nextLong call.
 
-[^1]: ...or more accurately a tree brute-forcer, but the term is so ingrained in seedfinding circles that I can't just change it now.
+[^1]: ...or more accurately "Tree Brute-forcer", but the previous term is so ingrained in seedcracking culture that I can't exactly change it now.
