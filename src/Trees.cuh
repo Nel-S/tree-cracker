@@ -1,9 +1,10 @@
-#pragma once
+#ifndef __TREES_CUH
+#define __TREES_CUH
 
 #include "RNG.cuh"
 #include "../AllowedValuesForSettings.cuh"
-#include <cmath>
-#include <stdexcept>
+// #include <cmath>
+// #include <string>
 
 // Given a block coordinate along one axis, and the version, returns the corresponding population chunk coordinate along that axis.
 __device__ constexpr int32_t getPopulationChunkCoordinate(const int32_t blockCoordinate, const Version version) noexcept {
@@ -16,12 +17,12 @@ __device__ constexpr uint32_t getOffsetWithinPopulationChunk(const int32_t block
 }
 
 // Given a population chunk coordinate along one axis, and the version, returns its corresponding minimum block coordinate along that axis.
-__device__ constexpr int32_t getMinBlockCoordinate(const int32_t populationChunkCoordinate, const Version version) noexcept {
+__host__ __device__ constexpr int32_t getMinBlockCoordinate(const int32_t populationChunkCoordinate, const Version version) noexcept {
 	return 16*(populationChunkCoordinate + 8*static_cast<int32_t>(version <= Version::v1_12_2));
 }
 
 // Given a population chunk coordinate along one axis, and the version, returns its corresponding maximum block coordinate along that axis.
-__device__ constexpr int32_t getMaxBlockCoordinate(const int32_t populationChunkCoordinate, const Version version) noexcept {
+__host__ __device__ constexpr int32_t getMaxBlockCoordinate(const int32_t populationChunkCoordinate, const Version version) noexcept {
 	return getMinBlockCoordinate(populationChunkCoordinate, version) + 15;
 }
 
@@ -45,7 +46,7 @@ struct SetOfTreeTypes {
 	}
 
 	// Returns if a specified tree type is contained within the set.
-	__device__ constexpr bool contains(const TreeType type) const noexcept {
+	__host__ __device__ constexpr bool contains(const TreeType type) const noexcept {
 		return this->treeTypeFlags & (static_cast<uint32_t>(1) << static_cast<uint32_t>(type));
 	}
 };
@@ -63,7 +64,11 @@ __device__ constexpr bool biomeContainsTreeType(const Biome biome, const TreeTyp
 		case Biome::Taiga:
 			return treeType == TreeType::Pine || treeType == TreeType::Spruce;
 		default:
-			throw std::invalid_argument("Unsupported biome provided.");
+			#if CUDA_IS_PRESENT
+				return false;
+			#else
+				throw std::invalid_argument("Unsupported biome provided.");
+			#endif
 	}
 }
 
@@ -93,7 +98,11 @@ __device__ TreeType getNextTreeType(Random &random, const Biome biome, const Ver
 			if (!random.nextInt(3)) return TreeType::Pine;
 			return TreeType::Spruce;
 		default:
-			throw std::invalid_argument("Unsupported biome provided.");
+			#if CUDA_IS_PRESENT
+				return TreeType::Unknown;
+			#else
+				throw std::invalid_argument("Unsupported biome provided.");
+			#endif
 	}
 }
 
@@ -105,7 +114,11 @@ __device__ constexpr int32_t biomeMinTreeCount(const Biome biome, const Version 
 		case Biome::Taiga:
 			return 10;
 		default:
-			throw std::invalid_argument("Unsupported biome provided.");
+			#if CUDA_IS_PRESENT
+				return INT32_MIN;
+			#else
+				throw std::invalid_argument("Unsupported biome provided.");
+			#endif
 	}
 }
 
@@ -116,10 +129,13 @@ __device__ constexpr float biomeExtraTreeChance(const Biome biome, const Version
 
 // Returns the maximum number of trees a specified biome under a specified version can generate per population chunk.
 __device__ constexpr int32_t biomeMaxTreeCount(const Biome biome, const Version version) {
-	int32_t min_tree_count = biomeMinTreeCount(biome, version);
+	int32_t minTreeCount = biomeMinTreeCount(biome, version);
+	#if CUDA_IS_PRESENT
+		if (minTreeCount == INT32_MIN) return INT32_MIN;
+	#endif
 	// Andrew: Probably not 1.8.9
-	if (version <= Version::v1_8_9) return min_tree_count + 1;
-	return min_tree_count + static_cast<int32_t>(biomeExtraTreeChance(biome, version) != 0.0f);
+	if (version <= Version::v1_8_9) return minTreeCount + 1;
+	return minTreeCount + static_cast<int32_t>(biomeExtraTreeChance(biome, version) != 0.0f);
 }
 
 // Given a Random instance, returns the number of trees a specified biome under a specified version will generate.
@@ -141,7 +157,11 @@ __device__ constexpr int32_t biomeMaxRandomCalls(const Biome biome, const Versio
 		case Biome::Taiga:
 			return biomeMaxTreeCount(biome, version) * 8;
 		default:
-			throw std::invalid_argument("Unsupported biome provided.");
+			#if CUDA_IS_PRESENT
+				return 0;
+			#else
+				throw std::invalid_argument("Unsupported biome provided.");
+			#endif
 	}
 }
 
@@ -157,7 +177,12 @@ struct SetOfLeafStates {
 	__device__ constexpr SetOfLeafStates(const LeafState leafStates[NUMBER_OF_LEAF_POSITIONS], const Version version) : mask(0) {
 		// Make sure all leaf states were given a valid value
 		for (size_t i = 0; i < NUMBER_OF_LEAF_POSITIONS; i++) {
-			if (leafStates[i] < LeafState::LeafWasNotPlaced || LeafState::Unknown < leafStates[i]) throw std::invalid_argument("Invalid leafstate in index" + std::to_string(i) + ".");
+			if (leafStates[i] < LeafState::LeafWasNotPlaced || LeafState::Unknown < leafStates[i])
+				#if CUDA_IS_PRESENT
+					return;
+				#else
+					throw std::invalid_argument("Invalid leafstate in index" + std::to_string(i) + ".");
+				#endif
 		}
 		for (int32_t y = 0; y < 3; y++) {
 			for (int32_t xz = 0; xz < 4; xz++) {
@@ -206,8 +231,8 @@ struct SetOfLeafStates {
 	}
 
 	// Returns the number of bits of information that can be derived from the known leaves.
-	__device__ constexpr double getEstimatedBits() const noexcept {
-		return static_cast<double>(__popc(this->mask >> 16));
+	__host__ __device__ constexpr double getEstimatedBits() const noexcept {
+		return static_cast<double>(getNumberOfOnesIn(this->mask >> 16));
 	}
 };
 
@@ -232,13 +257,13 @@ struct OakAttributes {
 	SetOfLeafStates leafStates;
 
 	__device__ constexpr OakAttributes() noexcept :
-		trunkHeight(this->TRUNK_HEIGHT_BOUNDS),
+		trunkHeight(OakAttributes::TRUNK_HEIGHT_BOUNDS),
 		leafStates() {}
 	__device__ constexpr OakAttributes(const OakAttributes &other) noexcept :
-		trunkHeight(other.trunkHeight, this->TRUNK_HEIGHT_BOUNDS),
+		trunkHeight(other.trunkHeight, OakAttributes::TRUNK_HEIGHT_BOUNDS),
 		leafStates(other.leafStates) {}
 	__device__ constexpr OakAttributes(const PossibleHeightsRange &trunkHeight, const SetOfLeafStates &leafStates) noexcept :
-		trunkHeight(trunkHeight, this->TRUNK_HEIGHT_BOUNDS),
+		trunkHeight(trunkHeight, OakAttributes::TRUNK_HEIGHT_BOUNDS),
 		leafStates(leafStates) {}
 
 	// Returns whether the given random instance under the specified version would generate an oak tree with attributes matching the initialized one.
@@ -254,8 +279,8 @@ struct OakAttributes {
 	}
 
 	// Returns the number of bits of information that can be derived from the attributes.
-	__device__ constexpr double getEstimatedBits() const noexcept {
-		return constexprLog2(static_cast<double>(this->TRUNK_HEIGHT_BOUNDS.getRange())/static_cast<double>(trunkHeight.getRange())) +
+	__host__ __device__ constexpr double getEstimatedBits() const noexcept {
+		return constexprLog2(static_cast<double>(OakAttributes::TRUNK_HEIGHT_BOUNDS.getRange())/static_cast<double>(trunkHeight.getRange())) +
 			this->leafStates.getEstimatedBits();
 	}
 
@@ -289,11 +314,11 @@ struct LargeOakAttributes {
 	static constexpr PossibleHeightsRange TRUNK_HEIGHT_BOUNDS = {3, 14};
 
 	__device__ constexpr LargeOakAttributes() noexcept :
-		trunkHeight(this->TRUNK_HEIGHT_BOUNDS) {}
+		trunkHeight(LargeOakAttributes::TRUNK_HEIGHT_BOUNDS) {}
 	__device__ constexpr LargeOakAttributes(const LargeOakAttributes &other) noexcept :
-		trunkHeight(other.trunkHeight, this->TRUNK_HEIGHT_BOUNDS) {}
+		trunkHeight(other.trunkHeight, LargeOakAttributes::TRUNK_HEIGHT_BOUNDS) {}
 	__device__ constexpr LargeOakAttributes(const PossibleHeightsRange &trunkHeight) noexcept :
-		trunkHeight(trunkHeight, this->TRUNK_HEIGHT_BOUNDS) {}
+		trunkHeight(trunkHeight, LargeOakAttributes::TRUNK_HEIGHT_BOUNDS) {}
 
 	// Returns whether the given random instance under the specified version would generate an oak tree with attributes matching the initialized one.
 	// The Random instance will be advanced 2-3 times.
@@ -319,8 +344,8 @@ struct LargeOakAttributes {
 	}
 
 	// Returns the number of bits of information that can be derived from the attributes.
-	__device__ constexpr double getEstimatedBits() const noexcept {
-		return constexprLog2(static_cast<double>(this->TRUNK_HEIGHT_BOUNDS.getRange())/static_cast<double>(trunkHeight.getRange()));
+	__host__ __device__ constexpr double getEstimatedBits() const noexcept {
+		return constexprLog2(static_cast<double>(LargeOakAttributes::TRUNK_HEIGHT_BOUNDS.getRange())/static_cast<double>(trunkHeight.getRange()));
 	}
 
 	__device__ static void skip(Random &random, const bool generated, const Version version) {
@@ -377,13 +402,13 @@ struct BirchAttributes {
 	SetOfLeafStates leafStates;
 
 	__device__ constexpr BirchAttributes() :
-		trunkHeight(this->TRUNK_HEIGHT_BOUNDS),
+		trunkHeight(BirchAttributes::TRUNK_HEIGHT_BOUNDS),
 		leafStates() {}
 	__device__ constexpr BirchAttributes(const BirchAttributes &other) :
-		trunkHeight(other.trunkHeight, this->TRUNK_HEIGHT_BOUNDS),
+		trunkHeight(other.trunkHeight, BirchAttributes::TRUNK_HEIGHT_BOUNDS),
 		leafStates(other.leafStates) {}
 	__device__ constexpr BirchAttributes(const PossibleHeightsRange &trunkHeight, const SetOfLeafStates &leafStates) :
-		trunkHeight(trunkHeight, this->TRUNK_HEIGHT_BOUNDS),
+		trunkHeight(trunkHeight, BirchAttributes::TRUNK_HEIGHT_BOUNDS),
 		leafStates(leafStates) {}
 
 	__device__ bool canBeGeneratedBy(Random &random, const Version version) const {
@@ -397,8 +422,8 @@ struct BirchAttributes {
 	}
 
 	// Returns the number of bits of information that can be derived from the attributes.
-	__device__ constexpr double getEstimatedBits() const noexcept {
-		return constexprLog2(static_cast<double>(this->TRUNK_HEIGHT_BOUNDS.getRange())/static_cast<double>(trunkHeight.getRange())) +
+	__host__ __device__ constexpr double getEstimatedBits() const noexcept {
+		return constexprLog2(static_cast<double>(BirchAttributes::TRUNK_HEIGHT_BOUNDS.getRange())/static_cast<double>(trunkHeight.getRange())) +
 			this->leafStates.getEstimatedBits();
 	}
 
@@ -441,29 +466,29 @@ struct PineAttributes {
 	static constexpr PossibleRadiiRange LEAVES_WIDEST_RADIUS_BOUNDS = {1, 3};
 
 	__device__ constexpr PineAttributes() :
-		trunkHeight(this->TRUNK_HEIGHT_BOUNDS),
-		leavesHeight(this->LEAVES_HEIGHT_BOUNDS),
-		leavesWidestRadius(this->LEAVES_WIDEST_RADIUS_BOUNDS) {}
+		trunkHeight(PineAttributes::TRUNK_HEIGHT_BOUNDS),
+		leavesHeight(PineAttributes::LEAVES_HEIGHT_BOUNDS),
+		leavesWidestRadius(PineAttributes::LEAVES_WIDEST_RADIUS_BOUNDS) {}
 	__device__ constexpr PineAttributes(const PineAttributes &other) :
-		trunkHeight(other.trunkHeight, this->TRUNK_HEIGHT_BOUNDS),
-		leavesHeight(other.leavesHeight, this->LEAVES_HEIGHT_BOUNDS),
-		leavesWidestRadius(other.leavesWidestRadius, this->LEAVES_WIDEST_RADIUS_BOUNDS) {}
+		trunkHeight(other.trunkHeight, PineAttributes::TRUNK_HEIGHT_BOUNDS),
+		leavesHeight(other.leavesHeight, PineAttributes::LEAVES_HEIGHT_BOUNDS),
+		leavesWidestRadius(other.leavesWidestRadius, PineAttributes::LEAVES_WIDEST_RADIUS_BOUNDS) {}
 	__device__ constexpr PineAttributes(const PossibleHeightsRange &trunkHeight, const PossibleHeightsRange &leavesHeight, const PossibleRadiiRange &leavesWidestRadius) :
-		trunkHeight({trunkHeight.lowerBound + 1, trunkHeight.upperBound + 1}, this->TRUNK_HEIGHT_BOUNDS),
-		leavesHeight({leavesHeight.lowerBound - 1, leavesHeight.upperBound - 1}, this->LEAVES_HEIGHT_BOUNDS),
-		leavesWidestRadius(leavesWidestRadius, this->LEAVES_WIDEST_RADIUS_BOUNDS) {}
+		trunkHeight({trunkHeight.lowerBound + 1, trunkHeight.upperBound + 1}, PineAttributes::TRUNK_HEIGHT_BOUNDS),
+		leavesHeight({leavesHeight.lowerBound - 1, leavesHeight.upperBound - 1}, PineAttributes::LEAVES_HEIGHT_BOUNDS),
+		leavesWidestRadius(leavesWidestRadius, PineAttributes::LEAVES_WIDEST_RADIUS_BOUNDS) {}
 
 	__device__ bool canBeGeneratedBy(Random &random, const Version version) const {
 		if (!this->trunkHeight.contains(TrunkHeight::getNextValueInRange(random, 7, 4))) return false;
 		uint32_t generatedLeavesHeight = 3 + random.nextInt(2);
-		return this->leavesHeight.contains(generatedLeavesHeight) && this->leavesWidestRadius.contains(std::min(generatedLeavesHeight - 1, 1 + random.nextInt(generatedLeavesHeight + 1)));
+		return this->leavesHeight.contains(generatedLeavesHeight) && this->leavesWidestRadius.contains(constexprMin(generatedLeavesHeight - 1, 1 + random.nextInt(generatedLeavesHeight + 1)));
 	}
 
 	// Returns the number of bits of information that can be derived from the attributes.
-	__device__ constexpr double getEstimatedBits() const noexcept {
-		return constexprLog2(static_cast<double>(this->TRUNK_HEIGHT_BOUNDS.getRange())/static_cast<double>(trunkHeight.getRange())) +
-			constexprLog2(static_cast<double>(this->LEAVES_HEIGHT_BOUNDS.getRange())/static_cast<double>(leavesHeight.getRange())) +
-			constexprLog2(static_cast<double>(this->LEAVES_WIDEST_RADIUS_BOUNDS.getRange())/static_cast<double>(leavesWidestRadius.getRange()));
+	__host__ __device__ constexpr double getEstimatedBits() const noexcept {
+		return constexprLog2(static_cast<double>(PineAttributes::TRUNK_HEIGHT_BOUNDS.getRange())/static_cast<double>(trunkHeight.getRange())) +
+			constexprLog2(static_cast<double>(PineAttributes::LEAVES_HEIGHT_BOUNDS.getRange())/static_cast<double>(leavesHeight.getRange())) +
+			constexprLog2(static_cast<double>(PineAttributes::LEAVES_WIDEST_RADIUS_BOUNDS.getRange())/static_cast<double>(leavesWidestRadius.getRange()));
 	}
 
 	__device__ static void skip(Random &random, const bool generated, const Version version) {
@@ -492,23 +517,23 @@ struct SpruceAttributes {
 	static constexpr PossibleRadiiRange TOPMOST_LEAVES_RADIUS_BOUNDS = {0, 1};
 
 	__device__ constexpr SpruceAttributes() :
-		trunkHeight(this->TRUNK_HEIGHT_BOUNDS),
-		logsBelowBottommostLeaves(this->LOGS_BELOW_BOTTOMMOST_LEAVES_BOUNDS),
-		leavesAboveTrunk(this->LEAVES_ABOVE_TRUNK_BOUNDS),
-		leavesWidestRadius(this->LEAVES_WIDEST_RADIUS_BOUNDS),
-		topmostLeavesRadius(this->TOPMOST_LEAVES_RADIUS_BOUNDS) {}
+		trunkHeight(SpruceAttributes::TRUNK_HEIGHT_BOUNDS),
+		logsBelowBottommostLeaves(SpruceAttributes::LOGS_BELOW_BOTTOMMOST_LEAVES_BOUNDS),
+		leavesAboveTrunk(SpruceAttributes::LEAVES_ABOVE_TRUNK_BOUNDS),
+		leavesWidestRadius(SpruceAttributes::LEAVES_WIDEST_RADIUS_BOUNDS),
+		topmostLeavesRadius(SpruceAttributes::TOPMOST_LEAVES_RADIUS_BOUNDS) {}
 	__device__ constexpr SpruceAttributes(const SpruceAttributes &other) :
-		trunkHeight(other.trunkHeight, this->TRUNK_HEIGHT_BOUNDS),
-		logsBelowBottommostLeaves(other.logsBelowBottommostLeaves, this->LOGS_BELOW_BOTTOMMOST_LEAVES_BOUNDS),
-		leavesAboveTrunk(other.leavesAboveTrunk, this->LEAVES_ABOVE_TRUNK_BOUNDS),
-		leavesWidestRadius(other.leavesWidestRadius, this->LEAVES_WIDEST_RADIUS_BOUNDS),
-		topmostLeavesRadius(other.topmostLeavesRadius, this->TOPMOST_LEAVES_RADIUS_BOUNDS) {}
+		trunkHeight(other.trunkHeight, SpruceAttributes::TRUNK_HEIGHT_BOUNDS),
+		logsBelowBottommostLeaves(other.logsBelowBottommostLeaves, SpruceAttributes::LOGS_BELOW_BOTTOMMOST_LEAVES_BOUNDS),
+		leavesAboveTrunk(other.leavesAboveTrunk, SpruceAttributes::LEAVES_ABOVE_TRUNK_BOUNDS),
+		leavesWidestRadius(other.leavesWidestRadius, SpruceAttributes::LEAVES_WIDEST_RADIUS_BOUNDS),
+		topmostLeavesRadius(other.topmostLeavesRadius, SpruceAttributes::TOPMOST_LEAVES_RADIUS_BOUNDS) {}
 	__device__ constexpr SpruceAttributes(const PossibleHeightsRange &trunkHeight, const PossibleHeightsRange &logsBelowBottommostLeaves, const PossibleRadiiRange &leavesWidestRadius, const PossibleRadiiRange &topmostLeavesRadius, const PossibleRadiiRange &leavesAboveTrunk) :
-		trunkHeight({trunkHeight.lowerBound + leavesAboveTrunk.lowerBound - 1, trunkHeight.upperBound + leavesAboveTrunk.upperBound - 1}, this->TRUNK_HEIGHT_BOUNDS), 
-		logsBelowBottommostLeaves(logsBelowBottommostLeaves, this->LOGS_BELOW_BOTTOMMOST_LEAVES_BOUNDS),
-		leavesAboveTrunk({leavesAboveTrunk.lowerBound - 1, leavesAboveTrunk.upperBound - 1}, this->LEAVES_ABOVE_TRUNK_BOUNDS),
-		leavesWidestRadius(leavesWidestRadius, this->LEAVES_WIDEST_RADIUS_BOUNDS),
-		topmostLeavesRadius(topmostLeavesRadius, this->TOPMOST_LEAVES_RADIUS_BOUNDS) {}
+		trunkHeight({trunkHeight.lowerBound + leavesAboveTrunk.lowerBound - 1, trunkHeight.upperBound + leavesAboveTrunk.upperBound - 1}, SpruceAttributes::TRUNK_HEIGHT_BOUNDS), 
+		logsBelowBottommostLeaves(logsBelowBottommostLeaves, SpruceAttributes::LOGS_BELOW_BOTTOMMOST_LEAVES_BOUNDS),
+		leavesAboveTrunk({leavesAboveTrunk.lowerBound - 1, leavesAboveTrunk.upperBound - 1}, SpruceAttributes::LEAVES_ABOVE_TRUNK_BOUNDS),
+		leavesWidestRadius(leavesWidestRadius, SpruceAttributes::LEAVES_WIDEST_RADIUS_BOUNDS),
+		topmostLeavesRadius(topmostLeavesRadius, SpruceAttributes::TOPMOST_LEAVES_RADIUS_BOUNDS) {}
 
 	__device__ bool canBeGeneratedBy(Random &random, const Version version) const {
 		uint32_t trunkHeight = TrunkHeight::getNextValueInRange(random, 6, 3);
@@ -517,16 +542,16 @@ struct SpruceAttributes {
 		if (!this->logsBelowBottommostLeaves.contains(logsBelowBottommostLeaves)) return false;
 		uint32_t maximumPossibleLeavesRadius = 2 + random.nextInt(2);
 		uint32_t topmostLeavesRadius = random.nextInt(2);
-		return this->topmostLeavesRadius.contains(topmostLeavesRadius) && this->leavesWidestRadius.contains(std::min(2 + static_cast<uint32_t>(trunkHeight + 1 - logsBelowBottommostLeaves + topmostLeavesRadius >= 8), maximumPossibleLeavesRadius)) && this->leavesAboveTrunk.contains(random.nextInt(3));
+		return this->topmostLeavesRadius.contains(topmostLeavesRadius) && this->leavesWidestRadius.contains(constexprMin(2 + static_cast<uint32_t>(trunkHeight + 1 - logsBelowBottommostLeaves + topmostLeavesRadius >= 8), maximumPossibleLeavesRadius)) && this->leavesAboveTrunk.contains(random.nextInt(3));
 	}
 
 	// Returns the number of bits of information that can be derived from the attributes.
-	__device__ constexpr double getEstimatedBits() const noexcept {
-		return constexprLog2(static_cast<double>(this->TRUNK_HEIGHT_BOUNDS.getRange())/static_cast<double>(trunkHeight.getRange())) +
-			constexprLog2(static_cast<double>(this->LOGS_BELOW_BOTTOMMOST_LEAVES_BOUNDS.getRange())/static_cast<double>(logsBelowBottommostLeaves.getRange())) +
-			constexprLog2(static_cast<double>(this->LEAVES_ABOVE_TRUNK_BOUNDS.getRange())/static_cast<double>(leavesAboveTrunk.getRange())) +
-			constexprLog2(static_cast<double>(this->LEAVES_WIDEST_RADIUS_BOUNDS.getRange())/static_cast<double>(leavesWidestRadius.getRange())) +
-			constexprLog2(static_cast<double>(this->TOPMOST_LEAVES_RADIUS_BOUNDS.getRange())/static_cast<double>(topmostLeavesRadius.getRange()));
+	__host__ __device__ constexpr double getEstimatedBits() const noexcept {
+		return constexprLog2(static_cast<double>(SpruceAttributes::TRUNK_HEIGHT_BOUNDS.getRange())/static_cast<double>(trunkHeight.getRange())) +
+			constexprLog2(static_cast<double>(SpruceAttributes::LOGS_BELOW_BOTTOMMOST_LEAVES_BOUNDS.getRange())/static_cast<double>(logsBelowBottommostLeaves.getRange())) +
+			constexprLog2(static_cast<double>(SpruceAttributes::LEAVES_ABOVE_TRUNK_BOUNDS.getRange())/static_cast<double>(leavesAboveTrunk.getRange())) +
+			constexprLog2(static_cast<double>(SpruceAttributes::LEAVES_WIDEST_RADIUS_BOUNDS.getRange())/static_cast<double>(leavesWidestRadius.getRange())) +
+			constexprLog2(static_cast<double>(SpruceAttributes::TOPMOST_LEAVES_RADIUS_BOUNDS.getRange())/static_cast<double>(topmostLeavesRadius.getRange()));
 	}
 
 	__device__ static void skip(Random &random, const bool generated, const Version version) {
@@ -554,8 +579,8 @@ struct TreeChunkPosition {
 		populationChunkZOffset(this->POPULATION_CHUNK_OFFSET_BOUNDS.lowerBound),
 		possibleTreeTypes() {}
 	__device__ constexpr TreeChunkPosition(const TreeChunkPosition &other) noexcept :
-		populationChunkXOffset(std::min(std::max(other.populationChunkXOffset, static_cast<uint32_t>(this->POPULATION_CHUNK_OFFSET_BOUNDS.lowerBound)), static_cast<uint32_t>(this->POPULATION_CHUNK_OFFSET_BOUNDS.upperBound))),
-		populationChunkZOffset(std::min(std::max(other.populationChunkZOffset, static_cast<uint32_t>(this->POPULATION_CHUNK_OFFSET_BOUNDS.lowerBound)), static_cast<uint32_t>(this->POPULATION_CHUNK_OFFSET_BOUNDS.upperBound))),
+		populationChunkXOffset(constexprMin(constexprMax(other.populationChunkXOffset, static_cast<uint32_t>(this->POPULATION_CHUNK_OFFSET_BOUNDS.lowerBound)), static_cast<uint32_t>(this->POPULATION_CHUNK_OFFSET_BOUNDS.upperBound))),
+		populationChunkZOffset(constexprMin(constexprMax(other.populationChunkZOffset, static_cast<uint32_t>(this->POPULATION_CHUNK_OFFSET_BOUNDS.lowerBound)), static_cast<uint32_t>(this->POPULATION_CHUNK_OFFSET_BOUNDS.upperBound))),
 		possibleTreeTypes(other.possibleTreeTypes),
 		oakAttributes(other.oakAttributes),
 		largeOakAttributes(other.largeOakAttributes),
@@ -569,9 +594,8 @@ struct TreeChunkPosition {
 		return random.nextInt(16) == this->populationChunkXOffset && random.nextInt(16) == this->populationChunkZOffset && (this->possibleTreeTypes.isEmpty() || this->possibleTreeTypes.contains(getNextTreeType(random, biome, version)));
 	}
 
-	// Returns if a Random instance, given a specified biome and version, would generate a tree matching the specified tree's z-coordinate, possible types, and type-specific attributes.
-	__device__ bool testZTypeAndAttributes(Random &random, const Biome biome, const Version version) const {
-		if (random.nextInt(16) != this->populationChunkZOffset) return false;
+	// Returns if a Random instance, given a specified biome and version, would generate a tree matching the specified tree's possible types and type-specific attributes.
+	__device__ bool testTypeAndAttributes(Random &random, const Biome biome, const Version version) const {
 		if (this->possibleTreeTypes.isEmpty()) return true;
 		TreeType type = getNextTreeType(random, biome, version);
 		if (!this->possibleTreeTypes.contains(type)) return false;
@@ -582,8 +606,19 @@ struct TreeChunkPosition {
 			case TreeType::Birch:     return this->birchAttributes.canBeGeneratedBy(random, version);
 			case TreeType::Pine:      return this->pineAttributes.canBeGeneratedBy(random, version);
 			case TreeType::Spruce:    return this->spruceAttributes.canBeGeneratedBy(random, version);
-			default: throw std::invalid_argument("Unsupported tree type provided.");
+			default:
+				#if CUDA_IS_PRESENT
+					return false;
+				#else
+					throw std::invalid_argument("Unsupported tree type provided.");
+				#endif
 		}
+	}
+
+	// Returns if a Random instance, given a specified biome and version, would generate a tree matching the specified tree's z-coordinate, possible types, and type-specific attributes.
+	__device__ bool testZTypeAndAttributes(Random &random, const Biome biome, const Version version) const {
+		if (random.nextInt(16) != this->populationChunkZOffset) return false;
+		return this->testTypeAndAttributes(random, biome, version);
 	}
 
 	// Returns if a Random instance, given a specified biome and version, would generate a tree matching the specified tree's x-coordinate, z-coordinate, type, and type-specific attributes.
@@ -593,7 +628,7 @@ struct TreeChunkPosition {
 
 	// Given a specified biome and version, returns the number of bits of information that can be derived from the known tree data.
 	// If multiple tree types are contained in possibleTreeTypes, the combined number of bits will be averaged over the feasible tree types.
-	__device__ constexpr double getEstimatedBits(const Biome biome, const Version version) const noexcept {
+	__host__ __device__ constexpr double getEstimatedBits(const Biome biome, const Version version) const noexcept {
 		double attributeBits = 0.;
 		uint32_t treeTypeCounter = 0;
 		switch (biome) {
@@ -656,7 +691,11 @@ struct TreeChunkPosition {
 				SpruceAttributes::skip(random, generated, version);
 				break;
 			default:
-				throw std::invalid_argument("Unsupported tree type provided.");
+				#if CUDA_IS_PRESENT
+					return;
+				#else
+					throw std::invalid_argument("Unsupported tree type provided.");
+				#endif
 		}
 	}
 };
@@ -665,7 +704,7 @@ struct TreeChunk {
 	Version version;
 	Biome biome;
 	int32_t populationChunkX, populationChunkZ;
-	TreeChunkPosition treePositions[16]; // TODO: Might need to set to 256 if coordless is implemented
+	TreeChunkPosition treePositions[16];
 	uint32_t numberOfTreePositions;
 
 	__device__ constexpr TreeChunk() noexcept :
@@ -691,23 +730,47 @@ struct TreeChunk {
 		numberOfTreePositions(0) {}
 
 	__device__ constexpr TreeChunkPosition &createNewTree(const int32_t x, const int32_t z, const TreeType treeType) {
-		if (!biomeContainsTreeType(this->biome, treeType, this->version)) throw std::invalid_argument("The specified tree type cannot generate under the TreeChunk's set biome and version."); // Invalid tree type for the given biome
+		if (!biomeContainsTreeType(this->biome, treeType, this->version)) {
+			// Invalid tree type for the given biome
+			#if CUDA_IS_PRESENT
+				return this->treePositions[sizeof(this->treePositions)/sizeof(*this->treePositions) - 1];
+			#else
+				throw std::invalid_argument("The specified tree type cannot generate under the TreeChunk's set biome and version.");
+			#endif
+		}
 
 		uint32_t populationChunkX = getPopulationChunkCoordinate(x, version);
 		uint32_t populationChunkZ = getPopulationChunkCoordinate(z, version);
 		if (!this->numberOfTreePositions) {
 			this->populationChunkX = populationChunkX;
 			this->populationChunkZ = populationChunkZ;
-		} else if (populationChunkX != this->populationChunkX || populationChunkZ != this->populationChunkZ) throw std::invalid_argument("New tree does not fall within the specified tree chunk.");
-
+		} else if (populationChunkX != this->populationChunkX || populationChunkZ != this->populationChunkZ) {
+			#if CUDA_IS_PRESENT
+				return this->treePositions[sizeof(this->treePositions)/sizeof(*this->treePositions) - 1];
+			#else
+				throw std::invalid_argument("New tree does not fall within the specified tree chunk.");
+			#endif
+		}
 		uint32_t populationChunkXOffset = getOffsetWithinPopulationChunk(x, version);
 		uint32_t populationChunkZOffset = getOffsetWithinPopulationChunk(z, version);
 
 		for (uint32_t i = 0; i < this->numberOfTreePositions; i++) {
 			TreeChunkPosition &tree = this->treePositions[i];
 			if (tree.populationChunkXOffset == populationChunkXOffset && tree.populationChunkZOffset == populationChunkZOffset) {
-				if (treeType == TreeType::Unknown) throw std::invalid_argument("A tree with known type cannot be superseded with a tree of unknown type.");
-				if (tree.possibleTreeTypes.contains(treeType)) throw std::invalid_argument("Encountered duplicate tree with duplicate coordinates, biome, version, and type.");
+				if (treeType == TreeType::Unknown) {
+					#if CUDA_IS_PRESENT
+						return this->treePositions[sizeof(this->treePositions)/sizeof(*this->treePositions) - 1];
+					#else
+						throw std::invalid_argument("A tree with known type cannot be superseded with a tree of unknown type.");
+					#endif
+				}
+				if (tree.possibleTreeTypes.contains(treeType)) {
+					#if CUDA_IS_PRESENT
+						return this->treePositions[sizeof(this->treePositions)/sizeof(*this->treePositions) - 1];
+					#else
+						throw std::invalid_argument("Encountered duplicate tree with duplicate coordinates, biome, version, and type.");
+					#endif
+				}
 				tree.possibleTreeTypes.add(treeType);
 				return tree;
 			}
@@ -742,13 +805,19 @@ struct TreeChunk {
 				this->createNewTree(treeData.coordinate.x, treeData.coordinate.z, TreeType::Unknown);
 				break;
 			default:
-				throw std::invalid_argument("Unsupported tree type provided.");
+				#if CUDA_IS_PRESENT
+					return;
+				#else
+					throw std::invalid_argument("Unsupported tree type provided.");
+				#endif
 		}
 	}
 
-	__device__ constexpr double getEstimatedBits() const noexcept {
+	__host__ __device__ constexpr double getEstimatedBits() const noexcept {
 		double bits = 0.;
 		for (uint32_t i = 0; i < this->numberOfTreePositions; ++i) bits += this->treePositions[i].getEstimatedBits(this->biome, this->version);
 		return bits;
     }
 };
+
+#endif

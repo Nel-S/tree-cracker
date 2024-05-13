@@ -1,3 +1,6 @@
+#ifndef __TESTS_CUH
+#define __TESTS_CUH
+
 #include "../AllowedValuesForSettings.cuh"
 
 // Seed: 3377920886278524622
@@ -9,7 +12,7 @@ constexpr InputData TEST_DATA_1[] = {
 		Biome::Forest,    // The biome the coordinate above is within. (Should be Forest for Oak or Forest/Birch Forest for Birch.)
 		PossibleHeightsRange(6), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [4,6] for Oak or [5,7] for Birch.)
 
-		(LeafState[NUMBER_OF_LEAF_POSITIONS]){
+		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
 			/* When generating oak or birch trees, the game will (pseudo)randomly keep, or reset to air, 12 exact leaves at the corners of the tree.
 			(Below is a layer-by-layer diagram of a tree; the ?s are where the corner leaves are kept/removed.):
 
@@ -37,7 +40,7 @@ constexpr InputData TEST_DATA_1[] = {
 			LeafState::LeafWasNotPlaced, // The state of the leaf in the Southwest corner
 			LeafState::LeafWasNotPlaced, // The state of the leaf in the Northeast corner
 			LeafState::LeafWasPlaced  // The state of the leaf in the Southeast corner
-		}
+		})
 	},
 	{
 		Version::v1_16_1, // The Minecraft version the tree was generated under.
@@ -46,7 +49,7 @@ constexpr InputData TEST_DATA_1[] = {
 		Biome::Forest,    // The biome the coordinate above is within. (Should be Forest for Oak or Forest/Birch Forest for Birch.)
 		PossibleHeightsRange(4), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [4,6] for Oak or [5,7] for Birch.)
 
-		(LeafState[NUMBER_OF_LEAF_POSITIONS]){
+		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
 			/* When generating oak or birch trees, the game will (pseudo)randomly keep, or reset to air, 12 exact leaves at the corners of the tree.
 			(Below is a layer-by-layer diagram of a tree; the ?s are where the corner leaves are kept/removed.):
 
@@ -74,7 +77,7 @@ constexpr InputData TEST_DATA_1[] = {
 			LeafState::LeafWasNotPlaced, // The state of the leaf in the Southwest corner
 			LeafState::LeafWasNotPlaced, // The state of the leaf in the Northeast corner
 			LeafState::LeafWasPlaced  // The state of the leaf in the Southeast corner
-		}
+		})
 	},
 	{
 		Version::v1_16_1, // The Minecraft version the tree was generated under.
@@ -83,7 +86,7 @@ constexpr InputData TEST_DATA_1[] = {
 		Biome::Forest,    // The biome the coordinate above is within. (Should be Forest for Oak or Forest/Birch Forest for Birch.)
 		PossibleHeightsRange(6), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [4,6] for Oak or [5,7] for Birch.)
 
-		(LeafState[NUMBER_OF_LEAF_POSITIONS]){
+		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
 			/* When generating oak or birch trees, the game will (pseudo)randomly keep, or reset to air, 12 exact leaves at the corners of the tree.
 			(Below is a layer-by-layer diagram of a tree; the ?s are where the corner leaves are kept/removed.):
 
@@ -111,7 +114,7 @@ constexpr InputData TEST_DATA_1[] = {
 			LeafState::LeafWasPlaced, // The state of the leaf in the Southwest corner
 			LeafState::LeafWasNotPlaced, // The state of the leaf in the Northeast corner
 			LeafState::LeafWasPlaced  // The state of the leaf in the Southeast corner
-		}
+		})
 	},
 	{
 		Version::v1_16_1, // The Minecraft version the tree was generated under.
@@ -120,7 +123,7 @@ constexpr InputData TEST_DATA_1[] = {
 		Biome::Forest,    // The biome the coordinate above is within. (Should be Forest for Oak or Forest/Birch Forest for Birch.)
 		PossibleHeightsRange(6), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [4,6] for Oak or [5,7] for Birch.)
 
-		(LeafState[NUMBER_OF_LEAF_POSITIONS]){
+		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
 			/* When generating oak or birch trees, the game will (pseudo)randomly keep, or reset to air, 12 exact leaves at the corners of the tree.
 			(Below is a layer-by-layer diagram of a tree; the ?s are where the corner leaves are kept/removed.):
 
@@ -148,7 +151,7 @@ constexpr InputData TEST_DATA_1[] = {
 			LeafState::LeafWasPlaced, // The state of the leaf in the Southwest corner
 			LeafState::LeafWasPlaced, // The state of the leaf in the Northeast corner
 			LeafState::LeafWasNotPlaced  // The state of the leaf in the Southeast corner
-		}
+		})
 	},
 };
 
@@ -162,7 +165,7 @@ constexpr InputData TEST_DATA_2[] = {
 		Biome::Forest,    // The biome the coordinate above is within. (Should be Forest for Oak or Forest/Birch Forest for Birch.)
 		PossibleHeightsRange(5), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [4,6] for Oak or [5,7] for Birch.)
 
-		(LeafState[NUMBER_OF_LEAF_POSITIONS]){
+		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
 			/* When generating oak or birch trees, the game will (pseudo)randomly keep, or reset to air, 12 exact leaves at the corners of the tree.
 			(Below is a layer-by-layer diagram of a tree; the ?s are where the corner leaves are kept/removed.):
 
@@ -190,7 +193,7 @@ constexpr InputData TEST_DATA_2[] = {
 			LeafState::LeafWasPlaced, // The state of the leaf in the Southwest corner
 			LeafState::LeafWasPlaced, // The state of the leaf in the Northeast corner
 			LeafState::LeafWasNotPlaced  // The state of the leaf in the Southeast corner
-		}
+		})
 	},
 	{
 		Version::v1_6_4, // The Minecraft version the tree was generated under.
@@ -199,7 +202,7 @@ constexpr InputData TEST_DATA_2[] = {
 		Biome::Forest,    // The biome the coordinate above is within. (Should be Forest for Oak or Forest/Birch Forest for Birch.)
 		PossibleHeightsRange(7), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [4,6] for Oak or [5,7] for Birch.)
 
-		(LeafState[NUMBER_OF_LEAF_POSITIONS]){
+		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
 			/* When generating oak or birch trees, the game will (pseudo)randomly keep, or reset to air, 12 exact leaves at the corners of the tree.
 			(Below is a layer-by-layer diagram of a tree; the ?s are where the corner leaves are kept/removed.):
 
@@ -227,7 +230,7 @@ constexpr InputData TEST_DATA_2[] = {
 			LeafState::Unknown, // The state of the leaf in the Southwest corner
 			LeafState::LeafWasPlaced, // The state of the leaf in the Northeast corner
 			LeafState::LeafWasPlaced  // The state of the leaf in the Southeast corner
-		}
+		})
 	},
 	{
 		Version::v1_6_4,    // The Minecraft version the tree was generated under. (Should be 1.6.4 or below, or 1.12.2 or above.)
@@ -249,7 +252,7 @@ constexpr InputData TEST_DATA_3[] = {
 		Biome::Forest,    // The biome the coordinate above is within. (Should be Forest for Oak or Forest/Birch Forest for Birch.)
 		PossibleHeightsRange(5), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [4,6] for Oak or [5,7] for Birch.)
 
-		(LeafState[NUMBER_OF_LEAF_POSITIONS]){
+		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
 			/* When generating oak or birch trees, the game will (pseudo)randomly keep, or reset to air, 12 exact leaves at the corners of the tree.
 			(Below is a layer-by-layer diagram of a tree; the ?s are where the corner leaves are kept/removed.):
 
@@ -277,7 +280,7 @@ constexpr InputData TEST_DATA_3[] = {
 			LeafState::LeafWasNotPlaced, // The state of the leaf in the Southwest corner
 			LeafState::LeafWasPlaced, // The state of the leaf in the Northeast corner
 			LeafState::LeafWasPlaced  // The state of the leaf in the Southeast corner
-		}
+		})
 	},
 	{
 		Version::v1_6_4, // The Minecraft version the tree was generated under.
@@ -286,7 +289,7 @@ constexpr InputData TEST_DATA_3[] = {
 		Biome::Forest,    // The biome the coordinate above is within. (Should be Forest for Oak or Forest/Birch Forest for Birch.)
 		PossibleHeightsRange(6), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [4,6] for Oak or [5,7] for Birch.)
 
-		(LeafState[NUMBER_OF_LEAF_POSITIONS]){
+		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
 			/* When generating oak or birch trees, the game will (pseudo)randomly keep, or reset to air, 12 exact leaves at the corners of the tree.
 			(Below is a layer-by-layer diagram of a tree; the ?s are where the corner leaves are kept/removed.):
 
@@ -314,7 +317,7 @@ constexpr InputData TEST_DATA_3[] = {
 			LeafState::LeafWasNotPlaced, // The state of the leaf in the Southwest corner
 			LeafState::LeafWasNotPlaced, // The state of the leaf in the Northeast corner
 			LeafState::LeafWasPlaced  // The state of the leaf in the Southeast corner
-		}
+		})
 	},
 	{
 		Version::v1_6_4, // The Minecraft version the tree was generated under.
@@ -323,7 +326,7 @@ constexpr InputData TEST_DATA_3[] = {
 		Biome::Forest,    // The biome the coordinate above is within. (Should be Forest for Oak or Forest/Birch Forest for Birch.)
 		PossibleHeightsRange(4), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [4,6] for Oak or [5,7] for Birch.)
 
-		(LeafState[NUMBER_OF_LEAF_POSITIONS]){
+		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
 			/* When generating oak or birch trees, the game will (pseudo)randomly keep, or reset to air, 12 exact leaves at the corners of the tree.
 			(Below is a layer-by-layer diagram of a tree; the ?s are where the corner leaves are kept/removed.):
 
@@ -351,7 +354,7 @@ constexpr InputData TEST_DATA_3[] = {
 			LeafState::LeafWasNotPlaced, // The state of the leaf in the Southwest corner
 			LeafState::LeafWasPlaced, // The state of the leaf in the Northeast corner
 			LeafState::LeafWasPlaced  // The state of the leaf in the Southeast corner
-		}
+		})
 	},
 	{
 		Version::v1_6_4, // The Minecraft version the tree was generated under.
@@ -360,7 +363,7 @@ constexpr InputData TEST_DATA_3[] = {
 		Biome::Forest,    // The biome the coordinate above is within. (Should be Forest for Oak or Forest/Birch Forest for Birch.)
 		PossibleHeightsRange(5), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [4,6] for Oak or [5,7] for Birch.)
 
-		(LeafState[NUMBER_OF_LEAF_POSITIONS]){
+		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
 			/* When generating oak or birch trees, the game will (pseudo)randomly keep, or reset to air, 12 exact leaves at the corners of the tree.
 			(Below is a layer-by-layer diagram of a tree; the ?s are where the corner leaves are kept/removed.):
 
@@ -388,7 +391,7 @@ constexpr InputData TEST_DATA_3[] = {
 			LeafState::LeafWasPlaced, // The state of the leaf in the Southwest corner
 			LeafState::LeafWasNotPlaced, // The state of the leaf in the Northeast corner
 			LeafState::LeafWasNotPlaced  // The state of the leaf in the Southeast corner
-		}
+		})
 	},
 	{
 		Version::v1_6_4, // The Minecraft version the tree was generated under.
@@ -397,7 +400,7 @@ constexpr InputData TEST_DATA_3[] = {
 		Biome::Forest,    // The biome the coordinate above is within. (Should be Forest for Oak or Forest/Birch Forest for Birch.)
 		PossibleHeightsRange(6), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [4,6] for Oak or [5,7] for Birch.)
 
-		(LeafState[NUMBER_OF_LEAF_POSITIONS]){
+		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
 			/* When generating oak or birch trees, the game will (pseudo)randomly keep, or reset to air, 12 exact leaves at the corners of the tree.
 			(Below is a layer-by-layer diagram of a tree; the ?s are where the corner leaves are kept/removed.):
 
@@ -425,7 +428,7 @@ constexpr InputData TEST_DATA_3[] = {
 			LeafState::LeafWasPlaced, // The state of the leaf in the Southwest corner
 			LeafState::LeafWasPlaced, // The state of the leaf in the Northeast corner
 			LeafState::LeafWasNotPlaced  // The state of the leaf in the Southeast corner
-		}
+		})
 	},
 };
 
@@ -639,44 +642,47 @@ constexpr InputData TEST_DATA_5[] = {
 };
 
 
+// TODO: Convert from Andrew's input_data.cuh
 // Seed: 123
-constexpr InputData TEST_DATA_7[] = {
+// constexpr InputData TEST_DATA_7[] = {
 
-};
+// };
 
 
 // Seed: 123
-constexpr InputData TEST_DATA_8[] = {
+// constexpr InputData TEST_DATA_8[] = {
 
-};
+// };
 
 
 // Seed: -5141540374460396599
 // From Advent
-constexpr InputData TEST_DATA_9[] = {
+// constexpr InputData TEST_DATA_9[] = {
 
-};
+// };
 
 
 // Seed: 123
-constexpr InputData TEST_DATA_10[] = {
+// constexpr InputData TEST_DATA_10[] = {
 
-};
+// };
 
 
 // Seed: ??
-constexpr InputData TEST_DATA_11[] = {
+// constexpr InputData TEST_DATA_11[] = {
 
-};
+// };
 
 
 // "Some random map from Minecraft: Story Mode", seed: 2234065947811606375
-constexpr InputData TEST_DATA_12[] = {
+// constexpr InputData TEST_DATA_12[] = {
 
-};
+// };
 
 
 // Seed: -3453423927651724977
-constexpr InputData TEST_DATA_13[] = {
+// constexpr InputData TEST_DATA_13[] = {
 
-};
+// };
+
+#endif

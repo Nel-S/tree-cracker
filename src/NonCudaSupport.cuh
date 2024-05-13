@@ -1,8 +1,11 @@
-#pragma once
+#ifndef __NON_CUDA_SUPPORT_CUH
+#define __NON_CUDA_SUPPORT_CUH
 
 #include <cinttypes>
 #include <cstdio>
 #include <cstdlib>
+#include <cuda.h>
+#include <stdexcept>
 
 #ifndef CUDA_VERSION
 	#define CUDA_IS_PRESENT false
@@ -87,3 +90,5 @@ void __tryCuda(cudaError_t error, const char *file, uint64_t line) {
 
 	ABORT("CUDA error at %s:%" PRIu64 ": %s\n", file, line, cudaGetErrorString(error));
 }
+
+#endif

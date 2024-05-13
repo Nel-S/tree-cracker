@@ -1,7 +1,9 @@
-#pragma once
+#ifndef __CHUNK_RANDOM_REVERSAL_CUH
+#define __CHUNK_RANDOM_REVERSAL_CUH
 
-#include "RNG.cuh"
-#include <vector>
+#include "GenerateAndValidateData.cuh"
+
+__managed__ uint64_t totalStructureSeedsPerRun = 0;
 
 namespace {
 	constexpr uint64_t MASK_48 = getBitmask(48);
@@ -15,7 +17,7 @@ namespace {
 	constexpr uint64_t A4 = 49720483695876;
 
 	// Returns a population seed in 1.12-.
-	uint64_t get_1_12_populationSeed(const uint64_t structureSeed, const uint64_t x, const uint64_t z) {
+	__device__ uint64_t get_1_12_populationSeed(const uint64_t structureSeed, const uint64_t x, const uint64_t z) {
 		uint64_t xoredStructureSeed = structureSeed ^ M1;
 		uint32_t c1 = (((xoredStructureSeed * M1 + A1) & MASK_48)) >> 16;
 		uint32_t c2 = (((xoredStructureSeed * M2 + A2) & MASK_48)) >> 16;
@@ -30,7 +32,7 @@ namespace {
 	}
 
 	// Returns the list of, and number of, possible offsets (which are XORed with a structure seed) in a 1.12- population seed.
-	void get_1_12_offsets(uint64_t *offsets, int32_t *offsetsLength, const uint64_t x, const uint64_t z) {
+	__device__ void get_1_12_offsets(uint64_t *offsets, int32_t *offsetsLength, const uint64_t x, const uint64_t z) {
 		for (uint64_t i = 0; i < 3; i++) {
 			for (uint64_t j = 0; j < 3; j++) {
 				uint64_t offset = x * i + z * j;
@@ -50,31 +52,39 @@ namespace {
 		}
 	}
 
-	void reverse_1_12_populationSeed_recursiveFallback(const uint64_t offset, const uint64_t structureSeed, const int32_t numberOfKnownBitsInStructureSeed, const uint64_t populationSeed, const uint64_t x, const uint64_t z, std::vector<uint64_t> &out) {
+	__device__ void reverse_1_12_populationSeed_recursiveFallback(const uint64_t offset, const uint64_t structureSeed, const int32_t numberOfKnownBitsInStructureSeed, const uint64_t populationSeed, const uint64_t x, const uint64_t z) {
 		if ((((x * (((structureSeed ^ M1) * M2 + A2) >> 16) + z * (((structureSeed ^ M1) * M4 + A4) >> 16) + offset) ^ structureSeed ^ populationSeed) & getBitmask(numberOfKnownBitsInStructureSeed - 16)) != 0) return;
 		if (numberOfKnownBitsInStructureSeed == 48) {
-			if (get_1_12_populationSeed(structureSeed, x, z) == populationSeed) out.push_back(structureSeed);
+			if (get_1_12_populationSeed(structureSeed, x, z) == populationSeed) {
+				uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&totalStructureSeedsPerRun), 1);
+				if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) return
+					#if (!CUDA_IS_PRESENT)
+						NULL
+					#endif
+					;
+				filterResults[resultIndex] = structureSeed;
+			}
 			return;
 		}
-		reverse_1_12_populationSeed_recursiveFallback(offset, structureSeed, numberOfKnownBitsInStructureSeed + 1, populationSeed, x, z, out);
-		reverse_1_12_populationSeed_recursiveFallback(offset, structureSeed + twoToThePowerOf(numberOfKnownBitsInStructureSeed), numberOfKnownBitsInStructureSeed + 1, populationSeed, x, z, out);
+		reverse_1_12_populationSeed_recursiveFallback(offset, structureSeed, numberOfKnownBitsInStructureSeed + 1, populationSeed, x, z);
+		reverse_1_12_populationSeed_recursiveFallback(offset, structureSeed + twoToThePowerOf(numberOfKnownBitsInStructureSeed), numberOfKnownBitsInStructureSeed + 1, populationSeed, x, z);
 	}
 
-	void reverse_1_12_populationSeed_fallback(const uint64_t populationSeed, const uint64_t x, const uint64_t z, std::vector<uint64_t> &out) {
+	__device__ void reverse_1_12_populationSeed_fallback(const uint64_t populationSeed, const uint64_t x, const uint64_t z) {
 		uint64_t offsets[9];
 		int32_t offsetsLength = 0;
 		get_1_12_offsets(offsets, &offsetsLength, x, z);
 
-		for (int32_t k = 0; k < offsetsLength; k++) {
+		for (int32_t k = 0; k < offsetsLength; ++k) {
 			uint64_t offset = offsets[k];
-			for (uint64_t structure_seed_low = 0; structure_seed_low < twoToThePowerOf(16); structure_seed_low += 1) {
-				reverse_1_12_populationSeed_recursiveFallback(offset, structure_seed_low, 16, populationSeed, x, z, out);
+			for (uint64_t structure_seed_low = 0; structure_seed_low < twoToThePowerOf(16); ++structure_seed_low) {
+				reverse_1_12_populationSeed_recursiveFallback(offset, structure_seed_low, 16, populationSeed, x, z);
 			}
 		}
 	}
 
 	// Returns a population seed in 1.13+.
-	uint64_t get_1_13_populationSeed(const uint64_t structureSeed, const uint64_t x, const uint64_t z) {
+	__device__ uint64_t get_1_13_populationSeed(const uint64_t structureSeed, const uint64_t x, const uint64_t z) {
 		uint64_t xoredStructureSeed = structureSeed ^ M1;
 		uint32_t c1 = (((xoredStructureSeed * M1 + A1) & MASK_48)) >> 16;
 		uint32_t c2 = (((xoredStructureSeed * M2 + A2) & MASK_48)) >> 16;
@@ -89,7 +99,7 @@ namespace {
 	}
 
 	// Returns the list of, and number of, possible offsets (which are XORed with a structure seed) in a 1.13+ population seed.
-	void get_1_13_offsets(uint64_t *offsets, int32_t *offsetsLength, const uint64_t x, const uint64_t z) {
+	__device__ void get_1_13_offsets(uint64_t *offsets, int32_t *offsetsLength, const uint64_t x, const uint64_t z) {
 		for (uint64_t i = 0; i < 2; i++) {
 			for (uint64_t j = 0; j < 2; j++) {
 				uint64_t offset = x * i + z * j;
@@ -109,47 +119,61 @@ namespace {
 		}
 	}
 
-	void reverse_1_13_populationSeed_recursiveFallback(const uint64_t offset, const uint64_t structureSeed, const int32_t numberOfKnownBitsInStructureSeed, const uint64_t populationSeed, const uint64_t x, const uint64_t z, std::vector<uint64_t> &out) {
-		if ((((x * (((structureSeed ^ M1) * M2 + A2) >> 16) + z * (((structureSeed ^ M1) * M4 + A4) >> 16) + offset) ^ structureSeed ^ populationSeed) & getBitmask(numberOfKnownBitsInStructureSeed - 16)) != 0) return;
+	__device__ void reverse_1_13_populationSeed_recursiveFallback(const uint64_t offset, const uint64_t structureSeed, const int32_t numberOfKnownBitsInStructureSeed, const uint64_t populationSeed, const uint64_t x, const uint64_t z) {
+		if (((x * (((structureSeed ^ M1) * M2 + A2) >> 16) + z * (((structureSeed ^ M1) * M4 + A4) >> 16) + offset) ^ structureSeed ^ populationSeed) & getBitmask(numberOfKnownBitsInStructureSeed - 16)) return;
 
 		if (numberOfKnownBitsInStructureSeed == 48) {
-			if (get_1_13_populationSeed(structureSeed, x, z) == populationSeed) out.push_back(structureSeed);
+			if (get_1_13_populationSeed(structureSeed, x, z) == populationSeed) {
+				uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&totalStructureSeedsPerRun), 1);
+				if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) return
+					#if (!CUDA_IS_PRESENT)
+						NULL
+					#endif
+					;
+				filterResults[resultIndex] = structureSeed;
+			}
 			return;
 		}
 
-		reverse_1_13_populationSeed_recursiveFallback(offset, structureSeed, numberOfKnownBitsInStructureSeed + 1, populationSeed, x, z, out);
-		reverse_1_13_populationSeed_recursiveFallback(offset, structureSeed + twoToThePowerOf(numberOfKnownBitsInStructureSeed), numberOfKnownBitsInStructureSeed + 1, populationSeed, x, z, out);
+		reverse_1_13_populationSeed_recursiveFallback(offset, structureSeed, numberOfKnownBitsInStructureSeed + 1, populationSeed, x, z);
+		reverse_1_13_populationSeed_recursiveFallback(offset, structureSeed + twoToThePowerOf(numberOfKnownBitsInStructureSeed), numberOfKnownBitsInStructureSeed + 1, populationSeed, x, z);
 	}
 
-	void reverse_1_13_populationSeed_fallback(const uint64_t populationSeed, const uint64_t x, const uint64_t z, std::vector<uint64_t> &out) {
+	__device__ void reverse_1_13_populationSeed_fallback(const uint64_t populationSeed, const uint64_t x, const uint64_t z) {
 		uint64_t offsets[9];
 		int32_t offsetsLength = 0;
 		get_1_13_offsets(offsets, &offsetsLength, x, z);
 
-		for (int32_t k = 0; k < offsetsLength; k++) {
+		for (int32_t k = 0; k < offsetsLength; ++k) {
 			uint64_t offset = offsets[k];
-			for (uint64_t structure_seed_low = 0; structure_seed_low < twoToThePowerOf(16); structure_seed_low += 1) {
-				reverse_1_13_populationSeed_recursiveFallback(offset, structure_seed_low, 16, populationSeed, x, z, out);
+			for (uint64_t structure_seed_low = 0; structure_seed_low < twoToThePowerOf(16); ++structure_seed_low) {
+				reverse_1_13_populationSeed_recursiveFallback(offset, structure_seed_low, 16, populationSeed, x, z);
 			}
 		}
 	}
 
 }
 
-void reverse_1_12_populationSeed(const uint64_t populationSeed, const uint64_t x, const uint64_t z, std::vector<uint64_t> &out) {
+__device__ void reverse_1_12_populationSeed(const uint64_t populationSeed, const uint64_t x, const uint64_t z) {
 	if (!x && !z) {
-		out.push_back(populationSeed);
+		uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&totalStructureSeedsPerRun), 1);
+		if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) return
+			#if (!CUDA_IS_PRESENT)
+				NULL
+			#endif
+			;
+		filterResults[resultIndex] = populationSeed;
 		return;
 	}
 
 	uint64_t constant_mult = x * M2 + z * M4;
 	int32_t constant_mult_zeros = getNumberOfTrailingZeroes(constant_mult);
 	if (constant_mult_zeros >= 16) {
-		reverse_1_12_populationSeed_fallback(populationSeed, x, z, out);
+		reverse_1_12_populationSeed_fallback(populationSeed, x, z);
 		return;
 	}
 	uint64_t constant_mult_mod_inv = inverseModulo(constant_mult >> constant_mult_zeros);
-	int32_t bits_per_iter = 16 - constant_mult_zeros;
+	// int32_t bits_per_iter = 16 - constant_mult_zeros;
 
 	int32_t x_zeros = getNumberOfTrailingZeroes(x);
 	int32_t z_zeros = getNumberOfTrailingZeroes(z);
@@ -202,7 +226,13 @@ void reverse_1_12_populationSeed(const uint64_t populationSeed, const uint64_t x
 			if (!invalid && xoredStructureSeedBits == 48 - constant_mult_zeros) {
 				for (uint64_t structureSeed = mask(xoredStructureSeed ^ M1, xoredStructureSeedBits); structureSeed < twoToThePowerOf(48); structureSeed += twoToThePowerOf(xoredStructureSeedBits)) {
 					if (get_1_12_populationSeed(structureSeed, x, z) == populationSeed) {
-						out.push_back(structureSeed);
+						uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&totalStructureSeedsPerRun), 1);
+						if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) return
+							#if (!CUDA_IS_PRESENT)
+								NULL
+							#endif
+							;
+						filterResults[resultIndex] = structureSeed;
 					}
 				}
 			}
@@ -210,20 +240,26 @@ void reverse_1_12_populationSeed(const uint64_t populationSeed, const uint64_t x
 	}
 }
 
-void reverse_1_13_populationSeed(const uint64_t populationSeed, const uint64_t x, const uint64_t z, std::vector<uint64_t> &out) {
+__device__ void reverse_1_13_populationSeed(const uint64_t populationSeed, const uint64_t x, const uint64_t z) {
 	if (!x && !z) {
-		out.push_back(populationSeed);
+		uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&totalStructureSeedsPerRun), 1);
+		if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) return
+			#if (!CUDA_IS_PRESENT)
+				NULL
+			#endif
+			;
+		filterResults[resultIndex] = populationSeed;
 		return;
 	}
 
 	uint64_t constant_mult = x * M2 + z * M4;
 	int32_t constant_mult_zeros = getNumberOfTrailingZeroes(constant_mult);
 	if (constant_mult_zeros >= 16) {
-		reverse_1_13_populationSeed_fallback(populationSeed, x, z, out);
+		reverse_1_13_populationSeed_fallback(populationSeed, x, z);
 		return;
 	}
 	uint64_t constant_mult_mod_inv = inverseModulo(constant_mult >> constant_mult_zeros);
-	int32_t bits_per_iter = 16 - constant_mult_zeros;
+	// int32_t bits_per_iter = 16 - constant_mult_zeros;
 
 	int32_t x_zeros = getNumberOfTrailingZeroes(x);
 	int32_t z_zeros = getNumberOfTrailingZeroes(z);
@@ -276,10 +312,18 @@ void reverse_1_13_populationSeed(const uint64_t populationSeed, const uint64_t x
 			if (!invalid && xoredStructureSeedBits == 48 - constant_mult_zeros) {
 				for (uint64_t structureSeed = mask(xoredStructureSeed ^ M1, xoredStructureSeedBits); structureSeed < twoToThePowerOf(48); structureSeed += twoToThePowerOf(xoredStructureSeedBits)) {
 					if (get_1_13_populationSeed(structureSeed, x, z) == populationSeed) {
-						out.push_back(structureSeed);
+						uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&totalStructureSeedsPerRun), 1);
+						if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) return
+							#if (!CUDA_IS_PRESENT)
+								NULL
+							#endif
+							;
+						filterResults[resultIndex] = structureSeed;
 					}
 				}
 			}
 		}
 	}
 }
+
+#endif

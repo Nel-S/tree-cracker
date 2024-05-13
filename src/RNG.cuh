@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __RNG_CUH
+#define __RNG_CUH
 
 #include "Base.cuh"
 
@@ -164,3 +165,5 @@ struct Random {
 		return false;
 	}
 };
+
+#endif

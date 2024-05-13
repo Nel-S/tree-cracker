@@ -1,18 +1,16 @@
-#pragma once
-#include "src/GenerateAndValidateData.cuh"
-#include "src/ChunkRandomReversal.cuh"
-#include "cubiomes/finders.h"
-#include <chrono>
+#ifndef __FILTERS_CUH
+#define __FILTERS_CUH
 
-__device__ uint64_t filterInputs[ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN];
-__device__ uint64_t filterResults[ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN]; // To prevent new results from accidentally erasing the old inputs mid-filter
+#include "GenerateAndValidateData.cuh"
+#include "ChunkRandomReversalFilter.cuh"
+#include "BiomesFilter.cuh"
+
 __device__ uint32_t theoreticalAttributesFilterMasks[ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN / 32];
 
-__managed__ uint64_t OneTreeFilterNumberOfResultsPerRun = 0;
+__managed__ uint64_t oneTreeFilterNumberOfResultsPerRun = 0;
 __managed__ uint64_t theoreticalCoordsAndTypesFilterNumberOfResultsPerRun = 0;
 __managed__ uint64_t theoreticalAttributesFilterNumberOfResultsPerRun = 0;
 __managed__ uint64_t allAttributesFilterNumberOfResultsPerRun = 0;
-__managed__ uint64_t totalStructureSeedsPerRun = 0;
 
 struct Stage2Results {
     uint64_t structureSeedIndex, treeSeed;
@@ -27,8 +25,6 @@ __managed__ uint64_t filter_8_numberOfResultsPerRun = 0;
 __device__ uint32_t filter_5_masks[(ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN + 31) / 32];
 __device__ uint32_t filter_8_masks[(ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN + 31) / 32];
 
-__managed__ uint64_t totalWorldseedsPerRun = 0;
-
 #if (!CUDA_IS_PRESENT)
 struct ThreadData {
 	uint64_t index, start;
@@ -40,12 +36,12 @@ struct ThreadData {
     - on the next call, would choose the first tree's z-coordinate;
     - on the next call(s), would choose the first tree's type; and
     - on subsequent calls, would choose all of the first tree's attributes.
-   OneTreeFilterNumberOfResultsPerRun must be set to 0 beforehand.
-   Values are generated internally and outputted to filterResults[], with the final count being stored in OneTreeFilterNumberOfResultsPerRun.*/
+   oneTreeFilterNumberOfResultsPerRun must be set to 0 beforehand.
+   Values are generated internally and outputted to filterResults[], with the final count being stored in oneTreeFilterNumberOfResultsPerRun.*/
 #if CUDA_IS_PRESENT
 __global__ __launch_bounds__(ACTUAL_WORKERS_PER_BLOCK) void OneTreeFilter(const uint64_t start) {
 	uint32_t index = blockIdx.x * blockDim.x + threadIdx.x;
-	uint64_t seed = (static_cast<uint64_t>(FIRST_POPULATION_CHUNK.treePositions[0].x) << 44) + start + index;
+	uint64_t seed = (static_cast<uint64_t>(FIRST_POPULATION_CHUNK.treePositions[0].populationChunkXOffset) << 44) + start + index;
 #else
 void *OneTreeFilter(void *start) {
 	ThreadData *star = static_cast<ThreadData *>(start);
@@ -59,7 +55,7 @@ void *OneTreeFilter(void *start) {
 		#endif
 		;
 
-	uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&OneTreeFilterNumberOfResultsPerRun), 1);
+	uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&oneTreeFilterNumberOfResultsPerRun), 1);
 	if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) return
 		#if (!CUDA_IS_PRESENT)
 		NULL
@@ -87,7 +83,7 @@ void *theoreticalCoordsAndTypesFilter(void *dat) {
 	uint64_t index = static_cast<ThreadData *>(dat)->index;
 #endif
 
-	if (index >= OneTreeFilterNumberOfResultsPerRun) return
+	if (index >= oneTreeFilterNumberOfResultsPerRun) return
 		#if (!CUDA_IS_PRESENT)
 		NULL
 		#endif
@@ -107,7 +103,7 @@ void *theoreticalCoordsAndTypesFilter(void *dat) {
 		random.skip<1>();
 	}
 
-	if (__popc(found) != FIRST_POPULATION_CHUNK.numberOfTreePositions) return
+	if (getNumberOfOnesIn(found) != FIRST_POPULATION_CHUNK.numberOfTreePositions) return
 		#if (!CUDA_IS_PRESENT)
 		NULL
 		#endif
@@ -158,7 +154,7 @@ void *theoreticalAttributesFilter(void *dat) {
 		random.skip<1>();
 	}
 
-	if (__popc(found) != FIRST_POPULATION_CHUNK.numberOfTreePositions) return
+	if (getNumberOfOnesIn(found) != FIRST_POPULATION_CHUNK.numberOfTreePositions) return
 		#if (!CUDA_IS_PRESENT)
 		NULL
 		#endif
@@ -186,17 +182,17 @@ __global__ __launch_bounds__(ACTUAL_WORKERS_PER_BLOCK) void allAttributesFilter(
 	index /= (MAX_CALLS + 1);
 
 	uint32_t generatedMask = index % (UINT64_C(1) << MAX_TREE_COUNT);
-	if (__popc(generatedMask) < FIRST_POPULATION_CHUNK.numberOfTreePositions) return;
+	if (getNumberOfOnesIn(generatedMask) < FIRST_POPULATION_CHUNK.numberOfTreePositions) return;
 	index /= UINT64_C(1) << MAX_TREE_COUNT;
 	if (index >= theoreticalAttributesFilterNumberOfResultsPerRun) return;
-	uint64_t seed = filterInputs[index];
+	uint64_t originalSeed = filterInputs[index];
 #else
 void *allAttributesFilter(void *dat) {
 	uint64_t index = static_cast<ThreadData *>(dat)->index;
 	if (index >= theoreticalAttributesFilterNumberOfResultsPerRun) return NULL;
 	uint64_t originalSeed = filterInputs[index];
 	for (uint32_t generatedMask = 0; generatedMask < UINT64_C(1) << MAX_TREE_COUNT; ++generatedMask) {
-		if (__popc(generatedMask) < FIRST_POPULATION_CHUNK.numberOfTreePositions) continue;
+		if (getNumberOfOnesIn(generatedMask) < FIRST_POPULATION_CHUNK.numberOfTreePositions) continue;
 		for (uint32_t calls = 0; calls <= MAX_CALLS; ++calls) {
 #endif
 			Random random = Random::withSeed(originalSeed);
@@ -237,7 +233,7 @@ void *allAttributesFilter(void *dat) {
 				TreeChunkPosition::skip(random, FIRST_POPULATION_CHUNK.biome, generated, FIRST_POPULATION_CHUNK.version);
 			}
 
-			if (__popc(found) != FIRST_POPULATION_CHUNK.numberOfTreePositions)
+			if (getNumberOfOnesIn(found) != FIRST_POPULATION_CHUNK.numberOfTreePositions)
 				#if (CUDA_IS_PRESENT)
 					return;
 				#else
@@ -285,27 +281,15 @@ void *reversePopulationSeeds(void *dat) {
 		#endif
 		;
 	uint64_t internalSeed = filterInputs[index];
-	std::vector<uint64_t> structureSeeds;
 
 	Random random = Random::withSeed(internalSeed);
 	for (int32_t i = 0; i <= 10000*static_cast<int32_t>(FIRST_POPULATION_CHUNK.version <= Version::v1_12_2); i++) {
 		uint64_t populationSeed = random.seed ^ LCG::MULTIPLIER;
-		if (FIRST_POPULATION_CHUNK.version <= Version::v1_12_2) reverse_1_12_populationSeed(populationSeed, static_cast<uint64_t>(FIRST_POPULATION_CHUNK.populationChunkX), static_cast<uint64_t>(FIRST_POPULATION_CHUNK.populationChunkZ), structureSeeds);
+		if (FIRST_POPULATION_CHUNK.version <= Version::v1_12_2) reverse_1_12_populationSeed(populationSeed, static_cast<uint64_t>(FIRST_POPULATION_CHUNK.populationChunkX), static_cast<uint64_t>(FIRST_POPULATION_CHUNK.populationChunkZ));
 		else {
 			populationSeed = (populationSeed - SALT) & LCG::MASK;
-			reverse_1_13_populationSeed(populationSeed, static_cast<uint64_t>(FIRST_POPULATION_CHUNK.populationChunkX*16), static_cast<uint64_t>(FIRST_POPULATION_CHUNK.populationChunkZ*16), structureSeeds);
+			reverse_1_13_populationSeed(populationSeed, static_cast<uint64_t>(FIRST_POPULATION_CHUNK.populationChunkX*16), static_cast<uint64_t>(FIRST_POPULATION_CHUNK.populationChunkZ*16));
 		}
-
-		for (uint64_t structureSeed : structureSeeds) {
-			uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&totalStructureSeedsPerRun), 1);
-			if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) return
-				#if (!CUDA_IS_PRESENT)
-					NULL
-				#endif
-				;
-			filterResults[resultIndex] = structureSeed;
-		}
-		structureSeeds.clear();
 		random.skip<-1>();
 	}
 #if (!CUDA_IS_PRESENT)
@@ -404,7 +388,7 @@ void *filter_6(void *dat) {
         random.skip<1>();
     }
 
-    if (__popc(found) != FIRST_POPULATION_CHUNK.numberOfTreePositions) return
+    if (getNumberOfOnesIn(found) != FIRST_POPULATION_CHUNK.numberOfTreePositions) return
 		#if (!CUDA_IS_PRESENT)
 		NULL
 		#endif
@@ -450,7 +434,7 @@ void *filter_7(void *dat) {
         random.skip<1>();
     }
 
-    if (__popc(found) != FIRST_POPULATION_CHUNK.numberOfTreePositions) return
+    if (getNumberOfOnesIn(found) != FIRST_POPULATION_CHUNK.numberOfTreePositions) return
 		#if (!CUDA_IS_PRESENT)
 		NULL
 		#endif
@@ -468,146 +452,89 @@ void *filter_7(void *dat) {
 #endif
 }
 
-#if CUDA_IS_PRESENT
-__global__ __launch_bounds__(ACTUAL_WORKERS_PER_BLOCK) void filter_8() {
-    uint32_t index = blockIdx.x * blockDim.x + threadIdx.x;
-#else
-void *filter_8(void *dat) {
-    uint64_t index = static_cast<ThreadData *>(dat)->index;
+// #if CUDA_IS_PRESENT
+// __global__ __launch_bounds__(ACTUAL_WORKERS_PER_BLOCK) void filter_8() {
+//     uint32_t index = blockIdx.x * blockDim.x + threadIdx.x;
+// #else
+// void *filter_8(void *dat) {
+//     uint64_t index = static_cast<ThreadData *>(dat)->index;
+// #endif
+
+//     uint32_t generated_mask = index % (UINT64_C(1) << MAX_TREE_COUNT);
+//     index /= UINT64_C(1) << MAX_TREE_COUNT;
+
+//     if (getNumberOfOnesIn(generated_mask) < FIRST_POPULATION_CHUNK.numberOfTreePositions) return
+// 		#if (!CUDA_IS_PRESENT)
+// 		NULL
+// 		#endif
+// 		;
+
+//     if (index >= filter_7_numberOfResultsPerRun) return
+// 		#if (!CUDA_IS_PRESENT)
+// 		NULL
+// 		#endif
+// 		;
+//     uint64_t seed = filterInput2[index].treeSeed;
+
+//     Random random = Random::withSeed(seed);
+
+//     uint32_t tree_count = biomeTreeCount(random, FIRST_POPULATION_CHUNK.biome, FIRST_POPULATION_CHUNK.version);
+//     if (generated_mask >> tree_count) return
+// 		#if (!CUDA_IS_PRESENT)
+// 		NULL
+// 		#endif
+// 		;
+
+//     uint32_t found = 0;
+
+//     #pragma unroll
+//     for (int32_t i = 0; i < tree_count; i++) {
+//         bool generated = (generated_mask >> i) & 1;
+
+//         if (generated) {
+//             #pragma unroll
+//             for (int32_t j = 0; j < FIRST_POPULATION_CHUNK.numberOfTreePositions; j++) {
+//                 const TreeChunkPosition &tree = FIRST_POPULATION_CHUNK.treePositions[j];
+
+//                 Random treeRandom(random);
+//                 if (tree.testXZTypeAndAttributes(treeRandom, FIRST_POPULATION_CHUNK.biome, FIRST_POPULATION_CHUNK.version)) found |= UINT64_C(1) << j;
+//             }
+//         }
+
+//         TreeChunkPosition::skip(random, FIRST_POPULATION_CHUNK.biome, generated, FIRST_POPULATION_CHUNK.version);
+//     }
+//     if (getNumberOfOnesIn(found) != FIRST_POPULATION_CHUNK.numberOfTreePositions) return
+// 		#if (!CUDA_IS_PRESENT)
+// 		NULL
+// 		#endif
+// 		;
+
+//     uint32_t results2_3_index = index;
+//     uint32_t results2_3_mask_mask = UINT32_C(1) << (results2_3_index & 31);
+//     if (atomicOr(&filter_8_masks[results2_3_index / 32], results2_3_mask_mask) & results2_3_mask_mask) return
+// 		#if (!CUDA_IS_PRESENT)
+// 		NULL
+// 		#endif
+// 		;
+
+//     uint32_t results2_0_index = filter_8_results[index].structureSeedIndex;
+//     uint32_t results2_0_mask_mask = UINT32_C(1) << (results2_0_index & 31);
+//     if (atomicOr(&filter_5_masks[results2_0_index / 32], results2_0_mask_mask) & results2_0_mask_mask) return
+// 		#if (!CUDA_IS_PRESENT)
+// 		NULL
+// 		#endif
+// 		;
+
+//     uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&filter_8_numberOfResultsPerRun), 1);
+//     if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) return
+// 		#if (!CUDA_IS_PRESENT)
+// 		NULL
+// 		#endif
+// 		;
+//     filterResults2[resultIndex] = filter_5_results[results2_0_index];
+// #if (!CUDA_IS_PRESENT)
+//     return NULL;
+// #endif
+// }
+
 #endif
-
-    uint32_t generated_mask = index % (UINT64_C(1) << MAX_TREE_COUNT);
-    index /= UINT64_C(1) << MAX_TREE_COUNT;
-
-    if (__popc(generated_mask) < FIRST_POPULATION_CHUNK.numberOfTreePositions) return
-		#if (!CUDA_IS_PRESENT)
-		NULL
-		#endif
-		;
-
-    if (index >= filter_7_numberOfResultsPerRun) return
-		#if (!CUDA_IS_PRESENT)
-		NULL
-		#endif
-		;
-    uint64_t seed = filterInput2[index].treeSeed;
-
-    Random random = Random::withSeed(seed);
-
-    uint32_t tree_count = biomeTreeCount(random, FIRST_POPULATION_CHUNK.biome, FIRST_POPULATION_CHUNK.version);
-    if (generated_mask >> tree_count) return
-		#if (!CUDA_IS_PRESENT)
-		NULL
-		#endif
-		;
-
-    uint32_t found = 0;
-
-    #pragma unroll
-    for (int32_t i = 0; i < tree_count; i++) {
-        bool generated = (generated_mask >> i) & 1;
-
-        if (generated) {
-            #pragma unroll
-            for (int32_t j = 0; j < FIRST_POPULATION_CHUNK.numberOfTreePositions; j++) {
-                const TreeChunkPosition &tree = FIRST_POPULATION_CHUNK.treePositions[j];
-
-                Random treeRandom(random);
-                if (tree.testXZTypeAndAttributes(treeRandom, FIRST_POPULATION_CHUNK.biome, FIRST_POPULATION_CHUNK.version)) found |= UINT64_C(1) << j;
-            }
-        }
-
-        TreeChunkPosition::skip(random, FIRST_POPULATION_CHUNK.biome, generated, FIRST_POPULATION_CHUNK.version);
-    }
-    if (__popc(found) != FIRST_POPULATION_CHUNK.numberOfTreePositions) return
-		#if (!CUDA_IS_PRESENT)
-		NULL
-		#endif
-		;
-
-    uint32_t results2_3_index = index;
-    uint32_t results2_3_mask_mask = UINT32_C(1) << (results2_3_index & 31);
-    if (atomicOr(&filter_8_masks[results2_3_index / 32], results2_3_mask_mask) & results2_3_mask_mask) return
-		#if (!CUDA_IS_PRESENT)
-		NULL
-		#endif
-		;
-
-    uint32_t results2_0_index = filter_8_results[index].structureSeedIndex;
-    uint32_t results2_0_mask_mask = UINT32_C(1) << (results2_0_index & 31);
-    if (atomicOr(&filter_5_masks[results2_0_index / 32], results2_0_mask_mask) & results2_0_mask_mask) return
-		#if (!CUDA_IS_PRESENT)
-		NULL
-		#endif
-		;
-
-    uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&filter_8_numberOfResultsPerRun), 1);
-    if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) return
-		#if (!CUDA_IS_PRESENT)
-		NULL
-		#endif
-		;
-    filterResults2[resultIndex] = filter_5_results[results2_0_index];
-#if (!CUDA_IS_PRESENT)
-    return NULL;
-#endif
-}
-
-/* Reverses population seeds (returned by Filter 4) back to structure seeds.
-   totalStructureSeedsPerRun must be set to 0 beforehand.
-   Values are read from filterInputs[] and outputted to filterResults[], with the final count being stored in totalStructureSeedsPerRun.*/
-#if CUDA_IS_PRESENT
-__global__ __launch_bounds__(ACTUAL_WORKERS_PER_BLOCK) void biomeFilter() {
-	uint32_t index = blockIdx.x * blockDim.x + threadIdx.x;
-	uint64_t topBits = index % 65536;
-	index /= 65536;
-	if (index >= totalStructureSeedsPerRun) return;
-	Generator g;
-	int32_t ids[100]; //TODO: Calculate
-	Version lastVersion;
-	uint64_t resultIndex;
-#else
-void *biomeFilter(void *dat) {
-	uint64_t index = static_cast<ThreadData *>(dat)->index;
-	if (index >= totalStructureSeedsPerRun) return NULL;
-	Generator g;
-	int32_t ids[100]; //TODO: Calculate
-	Version lastVersion;
-	uint64_t resultIndex;
-	for (uint64_t topBits = 0; topBits < 65536; ++topBits) {
-#endif
-		uint64_t seed = (topBits << 48) + filterInputs[index];
-		for (uint32_t i = 0; i < POPULATION_CHUNKS_DATA.numberOfTreeChunks; ++i) {
-			Version currentVersion = POPULATION_CHUNKS_DATA.treeChunks[i].version;
-			if ((!topBits && !i) || currentVersion != lastVersion) {
-				setupGenerator(&g, static_cast<int>(currentVersion), 0); // TODO: This -> Cubiomes version function
-				applySeed(&g, DIM_OVERWORLD, seed);
-				lastVersion = currentVersion;
-			}
-			int32_t populationChunkBlockX = getMinBlockCoordinate(POPULATION_CHUNKS_DATA.treeChunks[i].populationChunkX, currentVersion);
-			int32_t populationChunkBlockZ = getMinBlockCoordinate(POPULATION_CHUNKS_DATA.treeChunks[i].populationChunkZ, currentVersion);
-			// Range r = {1, populationChunkBlockX, populationChunkBlockZ, 16, 16, 64, 1};
-			for (uint32_t j = 0; j < POPULATION_CHUNKS_DATA.treeChunks[i].numberOfTreePositions; ++j) {
-				// getBiomeAt(&g, 1, populationChunkBlockX + POPULATION_CHUNKS_DATA.treeChunks[i].treePositions[j].populationChunkXOffset, 64, populationChunkBlockZ + POPULATION_CHUNKS_DATA.treeChunks[i].treePositions[j].populationChunkZOffset);
-				Range r = {1, populationChunkBlockX + POPULATION_CHUNKS_DATA.treeChunks[i].treePositions[j].populationChunkXOffset, populationChunkBlockZ + POPULATION_CHUNKS_DATA.treeChunks[i].treePositions[j].populationChunkZOffset, 16, 16, 64, 1};
-				if (genBiomes(&g, ids, r) || ids[0] != static_cast<int>(POPULATION_CHUNKS_DATA.treeChunks[i].biome)) // TODO: This -> Cubiomes biome function
-					#if (CUDA_IS_PRESENT)
-						return;
-					#else
-						goto nextTopBits;
-					#endif
-			}
-		}
-		resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&totalWorldseedsPerRun), 1);
-		if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) return
-			#if (!CUDA_IS_PRESENT)
-				NULL
-			#endif
-			;
-		filterResults[resultIndex] = seed;
-#if (!CUDA_IS_PRESENT)
-		nextTopBits:
-	}
-	return NULL;
-#endif
-}

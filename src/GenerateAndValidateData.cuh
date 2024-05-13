@@ -1,17 +1,19 @@
-#pragma once
+#ifndef __GENERATE_AND_VALIDATE_DATA_CUH
+#define __GENERATE_AND_VALIDATE_DATA_CUH
+
 #include "../Settings (MODIFY THIS).cuh"
 #include "Trees.cuh"
 
-__device__ constexpr char *printBiome(const Biome biome) {
+constexpr const char *printBiome(const Biome biome) {
 	switch (biome) {
 		case Biome::Forest: return "Forest";
-		case Biome::Birch_Forest: return "Forest";
-		case Biome::Taiga: return "Forest";
+		case Biome::Birch_Forest: return "Birch Forest";
+		case Biome::Taiga: return "Taiga";
 		default: throw std::invalid_argument("Unsupported biome provided.");
 	}
 }
 
-__device__ constexpr char *printVersion(const Version version) {
+constexpr const char *printVersion(const Version version) {
 	switch (version) {
 		case Version::v1_6_4: return "1.6.4";
 		case Version::v1_8_9: return "1.8.9";
@@ -22,7 +24,7 @@ __device__ constexpr char *printVersion(const Version version) {
 	}
 }
 
-__device__ constexpr char *printLeafPosition(const LeafPosition leafPosition) {
+constexpr const char *printLeafPosition(const LeafPosition leafPosition) {
 	switch (leafPosition) {
 		case LeafPosition::NorthwestLowerLeaf:  return  "Lower northwest leaf";
 		case LeafPosition::SouthwestLowerLeaf:  return  "Lower southwest leaf";
@@ -40,7 +42,7 @@ __device__ constexpr char *printLeafPosition(const LeafPosition leafPosition) {
 	}
 }
 
-__device__ constexpr char *printLeafState(const LeafState leafState) {
+constexpr const char *printLeafState(const LeafState leafState) {
 	switch (leafState) {
 		case LeafState::LeafWasNotPlaced: return "Leaf was not placed";
 		case LeafState::LeafWasPlaced: return "Leaf was placed";
@@ -60,7 +62,7 @@ struct SetOfTreeChunks {
 		treeChunks(),
 		numberOfTreeChunks(0) {
 		// For each tree in the input:
-		for (size_t i = 0; i < std::max(numberOfTreesInData, sizeof(treeChunks)/sizeof(*treeChunks)); ++i) {
+		for (size_t i = 0; i < constexprMax(numberOfTreesInData, sizeof(treeChunks)/sizeof(*treeChunks)); ++i) {
 			int32_t treePopulationChunkX = getPopulationChunkCoordinate(data[i].coordinate.x, data[i].version);
 			int32_t treePopulationChunkZ = getPopulationChunkCoordinate(data[i].coordinate.z, data[i].version);
 			bool matchingChunkExists = false;
@@ -110,13 +112,13 @@ struct SetOfTreeChunks {
 		}
 	}
 
-	__device__ constexpr double getEstimatedBits() const noexcept {
+	__host__ __device__ constexpr double getEstimatedBits() const noexcept {
 		double bits = 0.;
 		for (uint32_t i = 0; i < this->numberOfTreeChunks; ++i) bits += this->treeChunks[i].getEstimatedBits();
 		return bits - 8.*static_cast<double>(RELATIVE_COORDINATES_MODE); // In Relative Coordinates mode, all trees center around a single position, so if one knows any one position they have all of the other positions immediately. Therefore only 8 bits of information is actually lost.
 	}
 
-	__device__ constexpr void printFindings() const noexcept {
+	void printFindings() const noexcept {
 		if (SILENT_MODE) return;
 		std::fprintf(stderr, "Found %" PRIu32 " population chunks.\t(%.2g bits)\n", this->numberOfTreeChunks, this->getEstimatedBits());
 		for (uint32_t i = 0; i < this->numberOfTreeChunks; ++i) {
@@ -135,7 +137,7 @@ struct SetOfTreeChunks {
 					// Individual Oak data
 					std::fprintf(stderr, "\t\tOak\t(%.2g bits)\n", this->treeChunks[i].treePositions[j].oakAttributes.getEstimatedBits());
 					std::fprintf(stderr, "\t\t\tTrunk height range: [%" PRId32 ", %" PRId32 "]\n", this->treeChunks[i].treePositions[j].oakAttributes.trunkHeight.lowerBound, this->treeChunks[i].treePositions[j].oakAttributes.trunkHeight.upperBound);
-					std::fprintf(stderr, "\t\t\tLeaf states: \n %" PRIu32 " corner leaves placed, %" PRIu32 " total corner leaf states known\n", __popc(this->treeChunks[i].treePositions[j].oakAttributes.leafStates.mask & 0x0000ffff), __popc(this->treeChunks[i].treePositions[j].oakAttributes.leafStates.mask & 0xffff0000));
+					std::fprintf(stderr, "\t\t\tLeaf states: \n %" PRIu32 " corner leaves placed, %" PRIu32 " total corner leaf states known\n", getNumberOfOnesIn(this->treeChunks[i].treePositions[j].oakAttributes.leafStates.mask & 0x0000ffff), getNumberOfOnesIn(this->treeChunks[i].treePositions[j].oakAttributes.leafStates.mask & 0xffff0000));
 				}
 				if (this->treeChunks[i].treePositions[j].possibleTreeTypes.contains(TreeType::Large_Oak)) {
 					// Individual Large Oak data
@@ -146,7 +148,7 @@ struct SetOfTreeChunks {
 					// Individual Birch data
 					std::fprintf(stderr, "\t\tBirch\t(%.2g bits)\n", this->treeChunks[i].treePositions[j].birchAttributes.getEstimatedBits());
 					std::fprintf(stderr, "\t\t\tTrunk height range: [%" PRId32 ", %" PRId32 "]\n", this->treeChunks[i].treePositions[j].birchAttributes.trunkHeight.lowerBound, this->treeChunks[i].treePositions[j].birchAttributes.trunkHeight.upperBound);
-					std::fprintf(stderr, "\t\t\tLeaf states: \n %" PRIu32 " corner leaves placed, %" PRIu32 " total corner leaf states known\n", __popc(this->treeChunks[i].treePositions[j].birchAttributes.leafStates.mask & 0x0000ffff), __popc(this->treeChunks[i].treePositions[j].birchAttributes.leafStates.mask & 0xffff0000));
+					std::fprintf(stderr, "\t\t\tLeaf states: \n %" PRIu32 " corner leaves placed, %" PRIu32 " total corner leaf states known\n", getNumberOfOnesIn(this->treeChunks[i].treePositions[j].birchAttributes.leafStates.mask & 0x0000ffff), getNumberOfOnesIn(this->treeChunks[i].treePositions[j].birchAttributes.leafStates.mask & 0xffff0000));
 				}
 				if (this->treeChunks[i].treePositions[j].possibleTreeTypes.contains(TreeType::Pine)) {
 					// Individual Pine data
@@ -186,12 +188,12 @@ constexpr uint64_t SALT = FIRST_POPULATION_CHUNK.version <= Version::v1_14_4 ? 6
 // TODO: Replace CUDA_IS_PRESENT preprocessor directives with ACTUAL_DEVICE
 constexpr Device ACTUAL_DEVICE = CUDA_IS_PRESENT ? DEVICE : Device::CPU;
 
-constexpr uint64_t ACTUAL_NUMBER_OF_PARTIAL_RUNS = std::max(NUMBER_OF_PARTIAL_RUNS, UINT64_C(1));
-constexpr uint64_t ACTUAL_PARTIAL_RUN_TO_BEGIN_FROM = std::min(std::max(PARTIAL_RUN_TO_BEGIN_FROM, UINT64_C(1)), NUMBER_OF_PARTIAL_RUNS);
+constexpr uint64_t ACTUAL_NUMBER_OF_PARTIAL_RUNS = constexprMax(NUMBER_OF_PARTIAL_RUNS, UINT64_C(1));
+constexpr uint64_t ACTUAL_PARTIAL_RUN_TO_BEGIN_FROM = constexprMin(constexprMax(PARTIAL_RUN_TO_BEGIN_FROM, UINT64_C(1)), NUMBER_OF_PARTIAL_RUNS);
 
 // constexpr uint64_t ACTUAL_NUMBER_OF_WORKERS = NUMBER_OF_WORKERS;
 #if CUDA_IS_PRESENT
-constexpr uint64_t ACTUAL_WORKERS_PER_BLOCK = std::min(WORKERS_PER_BLOCK, NUMBER_OF_WORKERS);
+constexpr uint64_t ACTUAL_WORKERS_PER_BLOCK = constexprMin(WORKERS_PER_BLOCK, NUMBER_OF_WORKERS);
 #endif
 
 /* One one hand, the first filter finds all internal states that can generate the tree with the most number of bits of information.
@@ -200,16 +202,23 @@ constexpr uint64_t ACTUAL_WORKERS_PER_BLOCK = std::min(WORKERS_PER_BLOCK, NUMBER
    Therefore the expected number of results we'll need space for is simply the minimum of those two expression, which is then doubled to provide some leeway just in case.
    (Note: this does not currently take into account the fact that 65536 worldseeds correspond to each ultimate structure seed, since then we'd need to make this 65536x larger
    and I suspect the structure seeds will be filtered enough to render that unnecessary.)*/
-constexpr uint64_t RECOMMENDED_RESULTS_PER_RUN = 2*std::min((UINT64_C(1) << (48 - static_cast<uint32_t>(FIRST_POPULATION_CHUNK.treePositions[0].getEstimatedBits(FIRST_POPULATION_CHUNK.biome, FIRST_POPULATION_CHUNK.version) - 0.5)))/ACTUAL_NUMBER_OF_PARTIAL_RUNS, NUMBER_OF_WORKERS*(MAX_CALLS + 1)*(1 << MAX_TREE_COUNT));
+constexpr uint64_t RECOMMENDED_RESULTS_PER_RUN = 2*constexprMin((UINT64_C(1) << (48 - static_cast<uint32_t>(FIRST_POPULATION_CHUNK.treePositions[0].getEstimatedBits(FIRST_POPULATION_CHUNK.biome, FIRST_POPULATION_CHUNK.version) - 0.5)))/ACTUAL_NUMBER_OF_PARTIAL_RUNS, NUMBER_OF_WORKERS*(MAX_CALLS + 1)*(1 << MAX_TREE_COUNT));
 /* There are 2^48 possible internal Random states.
    The first four bits of it directly correspond to the first tree's x-offset within the population chunk, so that limits the possibilities to 2^44.*/
 constexpr uint64_t MOST_POSSIBLE_RESULTS_PER_RUN = (UINT64_C(1) << (48 - 4))/ACTUAL_NUMBER_OF_PARTIAL_RUNS + (ACTUAL_NUMBER_OF_PARTIAL_RUNS & (ACTUAL_NUMBER_OF_PARTIAL_RUNS + 1));
-constexpr uint64_t ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN = std::min(MAX_NUMBER_OF_RESULTS_PER_RUN ? MAX_NUMBER_OF_RESULTS_PER_RUN : RECOMMENDED_RESULTS_PER_RUN, MOST_POSSIBLE_RESULTS_PER_RUN);
+constexpr uint64_t ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN = constexprMin(MAX_NUMBER_OF_RESULTS_PER_RUN ? MAX_NUMBER_OF_RESULTS_PER_RUN : RECOMMENDED_RESULTS_PER_RUN, MOST_POSSIBLE_RESULTS_PER_RUN);
 
-__device__ constexpr void printBoundedSettings() {
+
+__device__ uint64_t filterInputs[ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN];
+__managed__ uint64_t filterResults[ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN]; // To prevent new results from accidentally erasing the old inputs mid-filter
+
+
+void printBoundedSettings() {
 	if (SILENT_MODE) return;
 	if (DEVICE != ACTUAL_DEVICE) std::fprintf(stderr, "WARNING: Program could not be run on preferred device; defaulting to CPU. (Usually this is because CUDA was not detected.)\n");
 	if (PARTIAL_RUN_TO_BEGIN_FROM != ACTUAL_NUMBER_OF_PARTIAL_RUNS) std::fprintf(stderr, "WARNING: NUMBER_OF_PARTIAL_RUNS (%" PRIu64 ") must be at least 1, and so was raised to %" PRIu64 ".\n", NUMBER_OF_PARTIAL_RUNS, ACTUAL_NUMBER_OF_PARTIAL_RUNS);
 	if (PARTIAL_RUN_TO_BEGIN_FROM != ACTUAL_PARTIAL_RUN_TO_BEGIN_FROM) std::fprintf(stderr, "WARNING: PARTIAL_RUN_TO_BEGIN_FROM (%" PRIu64 ") must be between 1 and the total number of partial runs (%" PRIu64 ") inclusive, and so was clamped to %" PRIu64 ".\n", PARTIAL_RUN_TO_BEGIN_FROM, NUMBER_OF_PARTIAL_RUNS, ACTUAL_PARTIAL_RUN_TO_BEGIN_FROM);
 	if (MAX_NUMBER_OF_RESULTS_PER_RUN != ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) std::fprintf(stderr, "WARNING: MAX_NUMBER_OF_RESULTS_PER_RUN (%" PRIu64 ") cannot be larger than the maximum number of possible results (%" PRIu64 "), and so was truncated to %" PRIu64 ".\n", MAX_NUMBER_OF_RESULTS_PER_RUN, MOST_POSSIBLE_RESULTS_PER_RUN, ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN);
 }
+
+#endif

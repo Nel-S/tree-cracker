@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __SETTINGS_CUH
+#define __SETTINGS_CUH
 
 // To find what options are valid for the following settings, see the following file:
 #include "AllowedValuesForSettings.cuh"
@@ -16,7 +17,7 @@ constexpr uint64_t WORKERS_PER_BLOCK = 256;
 #endif
 // The filepath one wishes to direct the output to. WARNING: If that file already exists, the old file will be overwritten.
 // If set to NULL, the output will only be printed to stdout.
-constexpr char *OUTPUT_FILEPATH = "output.txt";
+constexpr const char *OUTPUT_FILEPATH = "output.txt";
 constexpr bool TIME_PROGRAM = false;
 constexpr bool SILENT_MODE = false;
 
@@ -39,7 +40,7 @@ constexpr bool RELATIVE_COORDINATES_MODE = false;
 
 // This list will hold each tree one has data for, and their attributes.
 // Add to, delete from, or otherwise modify this example to suit your own input data.
-constexpr InputData INPUT_DATA[] = {
+__device__ constexpr InputData INPUT_DATA[] = {
 	/* ----- START OF AN EXAMPLE OAK/BIRCH TREE ----- */
 	// {
 	// 	Version::v1_16_4, // The Minecraft version the tree was generated under.
@@ -78,7 +79,7 @@ constexpr InputData INPUT_DATA[] = {
 	// 		LeafState::Unknown  // The state of the leaf in the Southeast corner
 	// 	}
 	// },
-	// /* ----- END OF AN EXAMPLE OAK/BIRCH TREE ----- */
+	/* ----- END OF AN EXAMPLE OAK/BIRCH TREE ----- */
 	
 	// /* ----- START OF AN EXAMPLE LARGE OAK TREE ----- */
 	// {
@@ -134,7 +135,7 @@ constexpr InputData INPUT_DATA[] = {
 		Biome::Forest,    // The biome the coordinate above is within. (Should be Forest for Oak or Forest/Birch Forest for Birch.)
 		PossibleHeightsRange(6), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [4,6] for Oak or [5,7] for Birch.)
 
-		(LeafState[NUMBER_OF_LEAF_POSITIONS]){
+		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
 			/* When generating oak or birch trees, the game will (pseudo)randomly keep, or reset to air, 12 exact leaves at the corners of the tree.
 			(Below is a layer-by-layer diagram of a tree; the ?s are where the corner leaves are kept/removed.):
 
@@ -162,7 +163,7 @@ constexpr InputData INPUT_DATA[] = {
 			LeafState::LeafWasNotPlaced, // The state of the leaf in the Southwest corner
 			LeafState::LeafWasNotPlaced, // The state of the leaf in the Northeast corner
 			LeafState::LeafWasPlaced  // The state of the leaf in the Southeast corner
-		}
+		})
 	},
 	{
 		Version::v1_16_1, // The Minecraft version the tree was generated under.
@@ -171,7 +172,7 @@ constexpr InputData INPUT_DATA[] = {
 		Biome::Forest,    // The biome the coordinate above is within. (Should be Forest for Oak or Forest/Birch Forest for Birch.)
 		PossibleHeightsRange(4), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [4,6] for Oak or [5,7] for Birch.)
 
-		(LeafState[NUMBER_OF_LEAF_POSITIONS]){
+		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
 			/* When generating oak or birch trees, the game will (pseudo)randomly keep, or reset to air, 12 exact leaves at the corners of the tree.
 			(Below is a layer-by-layer diagram of a tree; the ?s are where the corner leaves are kept/removed.):
 
@@ -199,7 +200,7 @@ constexpr InputData INPUT_DATA[] = {
 			LeafState::LeafWasNotPlaced, // The state of the leaf in the Southwest corner
 			LeafState::LeafWasNotPlaced, // The state of the leaf in the Northeast corner
 			LeafState::LeafWasPlaced  // The state of the leaf in the Southeast corner
-		}
+		})
 	},
 	{
 		Version::v1_16_1, // The Minecraft version the tree was generated under.
@@ -208,7 +209,7 @@ constexpr InputData INPUT_DATA[] = {
 		Biome::Forest,    // The biome the coordinate above is within. (Should be Forest for Oak or Forest/Birch Forest for Birch.)
 		PossibleHeightsRange(6), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [4,6] for Oak or [5,7] for Birch.)
 
-		(LeafState[NUMBER_OF_LEAF_POSITIONS]){
+		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
 			/* When generating oak or birch trees, the game will (pseudo)randomly keep, or reset to air, 12 exact leaves at the corners of the tree.
 			(Below is a layer-by-layer diagram of a tree; the ?s are where the corner leaves are kept/removed.):
 
@@ -236,7 +237,7 @@ constexpr InputData INPUT_DATA[] = {
 			LeafState::LeafWasPlaced, // The state of the leaf in the Southwest corner
 			LeafState::LeafWasNotPlaced, // The state of the leaf in the Northeast corner
 			LeafState::LeafWasPlaced  // The state of the leaf in the Southeast corner
-		}
+		})
 	},
 	{
 		Version::v1_16_1, // The Minecraft version the tree was generated under.
@@ -245,7 +246,7 @@ constexpr InputData INPUT_DATA[] = {
 		Biome::Forest,    // The biome the coordinate above is within. (Should be Forest for Oak or Forest/Birch Forest for Birch.)
 		PossibleHeightsRange(6), // The height of the tree's trunk (i.e. the number of logs it has). If there is uncertainty, one can instead specify a range with "PossibleHeightsRange(lowerBoundInclusive, upperBoundInclusive)". (Should be in the range [4,6] for Oak or [5,7] for Birch.)
 
-		(LeafState[NUMBER_OF_LEAF_POSITIONS]){
+		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
 			/* When generating oak or birch trees, the game will (pseudo)randomly keep, or reset to air, 12 exact leaves at the corners of the tree.
 			(Below is a layer-by-layer diagram of a tree; the ?s are where the corner leaves are kept/removed.):
 
@@ -273,6 +274,8 @@ constexpr InputData INPUT_DATA[] = {
 			LeafState::LeafWasPlaced, // The state of the leaf in the Southwest corner
 			LeafState::LeafWasPlaced, // The state of the leaf in the Northeast corner
 			LeafState::LeafWasNotPlaced  // The state of the leaf in the Southeast corner
-		}
+		})
 	},
 };
+
+#endif
