@@ -35,6 +35,46 @@ __host__ __device__ constexpr uint64_t constexprMax(const uint64_t a, const uint
 	return a > b ? a : b;
 }
 
+// Returns the compile-time floor of a number.
+__host__ __device__ constexpr int64_t constexprFloor(const double x) {
+	int64_t xAsInteger = static_cast<int64_t>(x);
+    return xAsInteger - static_cast<int64_t>(x < xAsInteger);
+}
+
+// Returns the compile-time ceiling of a number.
+// From s3cur3 on Stack Overflow (https://stackoverflow.com/a/66146159).
+__host__ __device__ constexpr int64_t constexprCeil(const double x) {
+	int64_t xAsInteger = static_cast<int64_t>(x);
+    return xAsInteger + static_cast<int64_t>(x > xAsInteger);
+}
+
+// Returns the compile-time rounded value of a number.
+// From Wikipedia.
+__host__ __device__ constexpr int64_t constexprRound(const double x) {
+	return constexprFloor(x + 0.5);
+}
+
+// Returns a compile-time approximation of e^x. (This becomes less accurate the further one drifts from 0.)
+__host__ __device__ constexpr double constexprExp(const double x) {
+	return 1. + x*(1. + x/2.*(1. + x/3.*(1. + x/4.*(1. + x/5.*(1. + x/6.*(1. + x/7.))))));
+}
+
+// Returns a compile-time approximation of log(x). (This becomes less accurate the further one drifts from 0.)
+__host__ __device__ constexpr double constexprLog(const double x) {
+	double y = x;
+	for (uint32_t i = 0; i < 15; ++i) {
+		double yExp = constexprExp(y);
+		y += 2*(x - yExp)/(x + yExp);
+	}
+	return y;
+}
+
+// Returns a compile-time approximation of log_2(x). (This becomes less accurate the further one drifts from 0.)
+__host__ __device__ constexpr double constexprLog2(const double x) {
+	return constexprLog(x)/0.693147180559945309417; // ln(2)
+}
+
+
 // Returns 2**bits.
 __host__ __device__ constexpr uint64_t twoToThePowerOf(const int32_t bits) noexcept {
 	return UINT64_C(1) << bits;
@@ -79,33 +119,6 @@ __host__ __device__ constexpr uint32_t getNumberOfOnesIn(uint32_t x) {
 	uint32_t count = 0;
 	for (; static_cast<bool>(x); x >>= 1) count += static_cast<int>(x & 1);
 	return count;
-}
-
-// Returns the compile-time ceiling of a number.
-// From s3cur3 on Stack Overflow (https://stackoverflow.com/a/66146159).
-__host__ __device__ constexpr int64_t constexprCeil(const double x) {
-	int64_t xAsInteger = static_cast<int64_t>(x);
-    return xAsInteger + static_cast<int64_t>(x > xAsInteger);
-}
-
-// Returns a compile-time approximation of e^x. (This becomes less accurate the further one drifts from 0.)
-__host__ __device__ constexpr double constexprExp(const double x) {
-	return 1. + x*(1. + x/2.*(1. + x/3.*(1. + x/4.*(1. + x/5.*(1. + x/6.*(1. + x/7.))))));
-}
-
-// Returns a compile-time approximation of log(x). (This becomes less accurate the further one drifts from 0.)
-__host__ __device__ constexpr double constexprLog(const double x) {
-	double y = x;
-	for (uint32_t i = 0; i < 15; ++i) {
-		double yExp = constexprExp(y);
-		y += 2*(x - yExp)/(x + yExp);
-	}
-	return y;
-}
-
-// Returns a compile-time approximation of log_2(x). (This becomes less accurate the further one drifts from 0.)
-__host__ __device__ constexpr double constexprLog2(const double x) {
-	return constexprLog(x)/0.693147180559945309417; // ln(2)
 }
 
 

@@ -155,7 +155,7 @@ struct Random {
 
 	// Returns whether a state could be generated as the result of a nextLong.
 	// Adapted from Panda4994 (https://github.com/Panda4994/panda4994.github.io/blob/48526d35d3d38750102b9f360dff45a4bdbc50bd/seedinfo/js/Random.js#L16).
-	__host__ __device__ constexpr bool isFromNextLong(const uint64_t state) noexcept {
+	__host__ __device__ static constexpr bool isFromNextLong(const uint64_t state) noexcept {
 		uint64_t secondNextLong = state & 0xffffffff;
 		uint64_t firstNextLong = ((state >> 32) & 0xffffffff) + static_cast<uint64_t>(secondNextLong > 0x7fffffff);
 		uint64_t upper32Bits = (firstNextLong << 16) * LCG::MULTIPLIER + LCG::ADDEND;

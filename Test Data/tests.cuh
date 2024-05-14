@@ -4,7 +4,7 @@
 #include "../AllowedValuesForSettings.cuh"
 
 // Seed: 3377920886278524622
-constexpr InputData TEST_DATA_1[] = {
+__device__ constexpr InputData TEST_DATA_1[] = {
     {
 		Version::v1_16_1, // The Minecraft version the tree was generated under.
 		TreeType::Birch,    // The type of tree it is.
@@ -142,9 +142,9 @@ constexpr InputData TEST_DATA_1[] = {
 			LeafState::Unknown, // The state of the leaf in the Northeast corner
 			LeafState::LeafWasNotPlaced, // The state of the leaf in the Southeast corner
 			// The middle y-level (y=n+3 above):
-			LeafState::Unknown, // The state of the leaf in the Northwest corner
+			LeafState::LeafWasNotPlaced, // The state of the leaf in the Northwest corner
 			LeafState::LeafWasNotPlaced, // The state of the leaf in the Southwest corner
-			LeafState::Unknown, // The state of the leaf in the Northeast corner
+			LeafState::LeafWasPlaced, // The state of the leaf in the Northeast corner
 			LeafState::Unknown, // The state of the leaf in the Southeast corner
 			// The highest y-level (y=n+4 above):
 			LeafState::LeafWasNotPlaced, // The state of the leaf in the Northwest corner
@@ -157,7 +157,7 @@ constexpr InputData TEST_DATA_1[] = {
 
 
 // Seed: -3453423927651724977
-constexpr InputData TEST_DATA_2[] = {
+__device__ constexpr InputData TEST_DATA_2[] = {
     {
 		Version::v1_6_4, // The Minecraft version the tree was generated under.
 		TreeType::Oak,    // The type of tree it is.
@@ -244,7 +244,7 @@ constexpr InputData TEST_DATA_2[] = {
 
 
 // 1.3.1, seed: ??
-constexpr InputData TEST_DATA_3[] = {
+__device__ constexpr InputData TEST_DATA_3[] = {
     {
 		Version::v1_6_4, // The Minecraft version the tree was generated under.
 		TreeType::Oak,    // The type of tree it is.
@@ -434,7 +434,7 @@ constexpr InputData TEST_DATA_3[] = {
 
 
 // Seed: ??
-constexpr InputData TEST_DATA_4[] = {
+__device__ constexpr InputData TEST_DATA_4[] = {
 	{
 		Version::v1_8_9, // The Minecraft version the tree was generated under.
 		TreeType::Spruce, // The type of tree it is.
@@ -489,7 +489,7 @@ constexpr InputData TEST_DATA_4[] = {
 
 // 1.7, seed: ??
 // From Rehorted
-constexpr InputData TEST_DATA_5[] = {
+__device__ constexpr InputData TEST_DATA_5[] = {
 	{
 		Version::v1_8_9, // The Minecraft version the tree was generated under.
 		TreeType::Spruce, // The type of tree it is.
@@ -644,44 +644,44 @@ constexpr InputData TEST_DATA_5[] = {
 
 // TODO: Convert from Andrew's input_data.cuh
 // Seed: 123
-// constexpr InputData TEST_DATA_7[] = {
+// __device__ constexpr InputData TEST_DATA_7[] = {
 
 // };
 
 
 // Seed: 123
-// constexpr InputData TEST_DATA_8[] = {
+// __device__ constexpr InputData TEST_DATA_8[] = {
 
 // };
 
 
 // Seed: -5141540374460396599
 // From Advent
-// constexpr InputData TEST_DATA_9[] = {
+// __device__ constexpr InputData TEST_DATA_9[] = {
 
 // };
 
 
 // Seed: 123
-// constexpr InputData TEST_DATA_10[] = {
+// __device__ constexpr InputData TEST_DATA_10[] = {
 
 // };
 
 
 // Seed: ??
-// constexpr InputData TEST_DATA_11[] = {
+// __device__ constexpr InputData TEST_DATA_11[] = {
 
 // };
 
 
 // "Some random map from Minecraft: Story Mode", seed: 2234065947811606375
-// constexpr InputData TEST_DATA_12[] = {
+// __device__ constexpr InputData TEST_DATA_12[] = {
 
 // };
 
 
 // Seed: -3453423927651724977
-// constexpr InputData TEST_DATA_13[] = {
+// __device__ constexpr InputData TEST_DATA_13[] = {
 
 // };
 

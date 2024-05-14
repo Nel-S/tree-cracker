@@ -88,28 +88,44 @@ struct InputData {
 	};
 
 	// Unknown tree/Generic constructor, trunkHeight unknown
-	constexpr InputData(const Version version, const TreeType treeType, const Coordinate &coordinate, const Biome biome) : version(version), treeType(treeType), coordinate(coordinate), biome(biome),
+	constexpr InputData(const Version version, const TreeType treeType, const Coordinate &coordinate, const Biome biome) :
+		version(version),
+		treeType(treeType),
+		coordinate(coordinate),
+		biome(biome),
 		leafStates{LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown} {}
 	// Large Oak tree/Generic constructor, trunkHeight known
-	constexpr InputData(const Version version, const TreeType treeType, const Coordinate &coordinate, const Biome biome, const PossibleHeightsRange &trunkHeight) : version(version), treeType(treeType), coordinate(coordinate), biome(biome),
+	constexpr InputData(const Version version, const TreeType treeType, const Coordinate &coordinate, const Biome biome, const PossibleHeightsRange &trunkHeight) :
+		version(version),
+		treeType(treeType),
+		coordinate(coordinate),
+		biome(biome),
 		trunkHeight(trunkHeight),
 		leafStates{LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown} {}
 	// Non-large Oak/Birch tree constructor
-	// constexpr InputData(const Version version, const TreeType treeType, const Coordinate &coordinate, const Biome biome, const PossibleHeightsRange &trunkHeight, const LeafState leafStates[NUMBER_OF_LEAF_POSITIONS]) : version(version), treeType(treeType), coordinate(coordinate), biome(biome),
-	// 	trunkHeight(trunkHeight),
-	// 	// NelS: Surely there must be a cleaner way of doing this.
-	// 	leafStates{leafStates[0], leafStates[1], leafStates[2], leafStates[3], leafStates[4], leafStates[5], leafStates[6], leafStates[7], leafStates[8], leafStates[9], leafStates[10], leafStates[11]} {};
-	constexpr InputData(const Version version, const TreeType treeType, const Coordinate &coordinate, const Biome biome, const PossibleHeightsRange &trunkHeight, const std::array<LeafState, NUMBER_OF_LEAF_POSITIONS> leafStates) : version(version), treeType(treeType), coordinate(coordinate), biome(biome),
+	constexpr InputData(const Version version, const TreeType treeType, const Coordinate &coordinate, const Biome biome, const PossibleHeightsRange &trunkHeight, const std::array<LeafState, NUMBER_OF_LEAF_POSITIONS> leafStates) :
+		version(version),
+		treeType(treeType),
+		coordinate(coordinate),
+		biome(biome),
 		trunkHeight(trunkHeight),
 		// NelS: Surely there must be a cleaner way of doing this.
 		leafStates{leafStates[0], leafStates[1], leafStates[2], leafStates[3], leafStates[4], leafStates[5], leafStates[6], leafStates[7], leafStates[8], leafStates[9], leafStates[10], leafStates[11]} {};
 	// Pine tree constructor
-	constexpr InputData(const Version version, const TreeType treeType, const Coordinate &coordinate, const Biome biome, const PossibleHeightsRange &trunkHeight, const PossibleHeightsRange &leavesHeight, const PossibleRadiiRange &leavesWidestRadius) : version(version), treeType(treeType), coordinate(coordinate), biome(biome),
+	constexpr InputData(const Version version, const TreeType treeType, const Coordinate &coordinate, const Biome biome, const PossibleHeightsRange &trunkHeight, const PossibleHeightsRange &leavesHeight, const PossibleRadiiRange &leavesWidestRadius) :
+		version(version),
+		treeType(treeType),
+		coordinate(coordinate),
+		biome(biome),
 		trunkHeight(trunkHeight),
 		pineLeavesWidestRadius(leavesWidestRadius),
 		leavesHeight(leavesHeight) {};
 	// Spruce tree constructor
-	constexpr InputData(const Version version, const TreeType treeType, const Coordinate &coordinate, const Biome biome, const PossibleHeightsRange &trunkHeight, const PossibleHeightsRange &logsBelowBottommostLeaves, const PossibleHeightsRange &leavesAboveTrunk, const PossibleRadiiRange &leavesWidestRadius, const PossibleRadiiRange &topmostLeavesRadius) : version(version), treeType(treeType), coordinate(coordinate), biome(biome),
+	constexpr InputData(const Version version, const TreeType treeType, const Coordinate &coordinate, const Biome biome, const PossibleHeightsRange &trunkHeight, const PossibleHeightsRange &logsBelowBottommostLeaves, const PossibleHeightsRange &leavesAboveTrunk, const PossibleRadiiRange &leavesWidestRadius, const PossibleRadiiRange &topmostLeavesRadius) :
+		version(version),
+		treeType(treeType),
+		coordinate(coordinate),
+		biome(biome),
 		trunkHeight(trunkHeight),
 		logsBelowBottommostLeaves(logsBelowBottommostLeaves),
 		leavesAboveTrunk(leavesAboveTrunk),

@@ -57,11 +57,13 @@ namespace {
 		if (numberOfKnownBitsInStructureSeed == 48) {
 			if (get_1_12_populationSeed(structureSeed, x, z) == populationSeed) {
 				uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&totalStructureSeedsPerRun), 1);
-				if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) return
-					#if (!CUDA_IS_PRESENT)
-						NULL
+				if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) {
+					#if CUDA_IS_PRESENT
+						return;
+					#else
+						return NULL;
 					#endif
-					;
+				}
 				filterResults[resultIndex] = structureSeed;
 			}
 			return;
@@ -125,11 +127,13 @@ namespace {
 		if (numberOfKnownBitsInStructureSeed == 48) {
 			if (get_1_13_populationSeed(structureSeed, x, z) == populationSeed) {
 				uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&totalStructureSeedsPerRun), 1);
-				if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) return
-					#if (!CUDA_IS_PRESENT)
-						NULL
+				if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) {
+					#if CUDA_IS_PRESENT
+						return;
+					#else
+						return NULL;
 					#endif
-					;
+				}
 				filterResults[resultIndex] = structureSeed;
 			}
 			return;
@@ -157,11 +161,13 @@ namespace {
 __device__ void reverse_1_12_populationSeed(const uint64_t populationSeed, const uint64_t x, const uint64_t z) {
 	if (!x && !z) {
 		uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&totalStructureSeedsPerRun), 1);
-		if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) return
-			#if (!CUDA_IS_PRESENT)
-				NULL
+		if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) {
+			#if CUDA_IS_PRESENT
+				return;
+			#else
+				return NULL;
 			#endif
-			;
+		}
 		filterResults[resultIndex] = populationSeed;
 		return;
 	}
@@ -227,11 +233,13 @@ __device__ void reverse_1_12_populationSeed(const uint64_t populationSeed, const
 				for (uint64_t structureSeed = mask(xoredStructureSeed ^ M1, xoredStructureSeedBits); structureSeed < twoToThePowerOf(48); structureSeed += twoToThePowerOf(xoredStructureSeedBits)) {
 					if (get_1_12_populationSeed(structureSeed, x, z) == populationSeed) {
 						uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&totalStructureSeedsPerRun), 1);
-						if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) return
-							#if (!CUDA_IS_PRESENT)
-								NULL
+						if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) {
+							#if CUDA_IS_PRESENT
+								return;
+							#else
+								return NULL;
 							#endif
-							;
+						}
 						filterResults[resultIndex] = structureSeed;
 					}
 				}
@@ -243,11 +251,13 @@ __device__ void reverse_1_12_populationSeed(const uint64_t populationSeed, const
 __device__ void reverse_1_13_populationSeed(const uint64_t populationSeed, const uint64_t x, const uint64_t z) {
 	if (!x && !z) {
 		uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&totalStructureSeedsPerRun), 1);
-		if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) return
-			#if (!CUDA_IS_PRESENT)
-				NULL
+		if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) {
+			#if CUDA_IS_PRESENT
+				return;
+			#else
+				return NULL;
 			#endif
-			;
+		}
 		filterResults[resultIndex] = populationSeed;
 		return;
 	}
@@ -313,11 +323,13 @@ __device__ void reverse_1_13_populationSeed(const uint64_t populationSeed, const
 				for (uint64_t structureSeed = mask(xoredStructureSeed ^ M1, xoredStructureSeedBits); structureSeed < twoToThePowerOf(48); structureSeed += twoToThePowerOf(xoredStructureSeedBits)) {
 					if (get_1_13_populationSeed(structureSeed, x, z) == populationSeed) {
 						uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&totalStructureSeedsPerRun), 1);
-						if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) return
-							#if (!CUDA_IS_PRESENT)
-								NULL
+						if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) {
+							#if CUDA_IS_PRESENT
+								return;
+							#else
+								return NULL;
 							#endif
-							;
+						}
 						filterResults[resultIndex] = structureSeed;
 					}
 				}
