@@ -25,7 +25,7 @@
 
 	// Returns the number of 1s in a 32-bit integer.
 	// (The unintuitive name is from NVIDIA, not me.)
-	constexpr int __popc(uint32_t x) {
+	int __popc(uint32_t x) {
 		int count = 0;
 		for (; static_cast<bool>(x); x >>= 1) count += static_cast<int>(x & 1);
 		return count;
@@ -51,17 +51,17 @@
 
 	pthread_t *threads;
 	size_t __numberOfThreads;
-	constexpr cudaError_t cudaDeviceSynchronize() {
+	cudaError_t cudaDeviceSynchronize() {
 		for (size_t i = 0; i < __numberOfThreads; ++i) pthread_join(threads[i], NULL);
 		return cudaSuccess;
 	}
-	constexpr char *cudaGetErrorString(cudaError_t error) {
+	char *cudaGetErrorString(cudaError_t error) {
 		return "";
 	}
-	constexpr cudaError_t cudaGetLastError() {
+	cudaError_t cudaGetLastError() {
 		return cudaSuccess;
 	}
-	constexpr cudaError_t cudaGetSymbolAddress(void** devPtr, const void* symbol) {
+	cudaError_t cudaGetSymbolAddress(void** devPtr, const void* symbol) {
 		// devPtr = &symbol;
 		memcpy(devPtr, symbol, sizeof(symbol));
 		return cudaSuccess;
@@ -70,7 +70,7 @@
 	#include <cstring>
 	#define cudaMemsetAsync memset
 	enum cudaMemcpyKind {cudaMemcpyDefault};
-	constexpr cudaError_t cudaMemcpy(void *dst, const void *src, size_t count, cudaMemcpyKind kind) {
+	cudaError_t cudaMemcpy(void *dst, const void *src, size_t count, cudaMemcpyKind kind) {
 		memcpy(dst, src, count);
 		return cudaSuccess;
 	}
@@ -87,7 +87,6 @@
 
 void __tryCuda(cudaError_t error, const char *file, uint64_t line) {
 	if (error == cudaSuccess) return;
-
 	ABORT("CUDA error at %s:%" PRIu64 ": %s\n", file, line, cudaGetErrorString(error));
 }
 

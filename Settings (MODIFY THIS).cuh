@@ -2,7 +2,7 @@
 #define __SETTINGS_CUH
 
 // To find what options are valid for the following settings, see the following file:
-#include "AllowedValuesForSettings.cuh"
+#include "Allowed Values for Settings.cuh"
 #include "Test Data/Tests.cuh"
 
 
@@ -27,12 +27,12 @@ constexpr uint64_t NUMBER_OF_PARTIAL_RUNS = 8;
 constexpr uint64_t PARTIAL_RUN_TO_BEGIN_FROM = 1; // This counts as 1, 2, ..., NUMBER_OF_PARTIAL_RUNS.
 /* The maximum number of results to allow per run.
    If set to 0, the program will try to calculate a reasonable limit automatically, based on your input data.*/
-constexpr uint64_t MAX_NUMBER_OF_RESULTS_PER_RUN = 0;
+constexpr uint64_t MAX_NUMBER_OF_RESULTS_PER_RUN = AUTO;
 
 
 /* This list holds each tree one has data for, and their attributes.
    Add to, delete from, or otherwise modify this example to suit your own input data.*/
-#define INPUT_DATA TEST_DATA_4
+#define INPUT_DATA TEST_DATA_7
 // __device__ constexpr InputData INPUT_DATA[] = {
 // 	/* ----- START OF AN EXAMPLE OAK/BIRCH TREE ----- */
 // 	{

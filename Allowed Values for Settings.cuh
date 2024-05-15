@@ -1,12 +1,12 @@
 #ifndef __ALLOWED_VALUES_FOR_SETTINGS_CUH
 #define __ALLOWED_VALUES_FOR_SETTINGS_CUH
 
-#include "src/Base.cuh"
+#include "src/Base Logic.cuh"
 #include <array>
 
 // The list of supported devices.
 enum class Device {
-	CPU, CUDA
+	CUDA, AUTO = CUDA
 };
 
 // The list of supported versions.
@@ -35,17 +35,21 @@ enum class Version {
 	// v1_18, v1_18_0 = v1_18, v1_18_1, v1_18_2,
 	// v1_19, v1_19_0 = v1_19, v1_19_1, v1_19_2, v1_19_3, v1_19_4,
 	// v1_20, v1_20_0 = v1_20, v1_20_1, v1_20_2, v1_20_3, v1_20_4, v1_20_5, v1_20_6,
-	// Unknown
+	// Unknown,
+	AUTO = v1_16_4 // Latest implemented version
 };
 
 // The list of supported tree types.
 enum class TreeType {
-	Oak, Large_Oak, Spruce, Pine, Birch, Unknown
+	Oak, Large_Oak, Spruce, Pine, Birch, Unknown,
+	AUTO = Unknown
 };
 
 // The list of supported biomes.
 enum class Biome {
-	Forest, Birch_Forest, Taiga //, Unknown
+	Forest, Birch_Forest, Taiga,
+	// Unknown,
+	AUTO = Forest
 };
 
 // For Oak and Birch trees, a list of which corner leaf each entry in the LeafState array corresponds to (as well as tracking how many leaf positions in total there are).
@@ -57,7 +61,11 @@ enum class LeafPosition {
 
 // The list of supported corner leaf states.
 enum class LeafState {
-	LeafWasNotPlaced, LeafWasPlaced, Unknown
+	LeafWasNotPlaced, LeafWasPlaced, Unknown, AUTO = Unknown
+};
+
+enum Setting {
+	AUTO = INT32_MAX
 };
 
 struct InputData {
@@ -93,7 +101,7 @@ struct InputData {
 		treeType(treeType),
 		coordinate(coordinate),
 		biome(biome),
-		leafStates{LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown} {}
+		leafStates{LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO} {}
 	// Large Oak tree/Generic constructor, trunkHeight known
 	constexpr InputData(const Version version, const TreeType treeType, const Coordinate &coordinate, const Biome biome, const PossibleHeightsRange &trunkHeight) :
 		version(version),
@@ -101,7 +109,7 @@ struct InputData {
 		coordinate(coordinate),
 		biome(biome),
 		trunkHeight(trunkHeight),
-		leafStates{LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown, LeafState::Unknown} {}
+		leafStates{LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO} {}
 	// Non-large Oak/Birch tree constructor
 	constexpr InputData(const Version version, const TreeType treeType, const Coordinate &coordinate, const Biome biome, const PossibleHeightsRange &trunkHeight, const std::array<LeafState, NUMBER_OF_LEAF_POSITIONS> leafStates) :
 		version(version),

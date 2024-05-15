@@ -11,7 +11,7 @@ int main() {
 	if (!SILENT_MODE) {
 		POPULATION_CHUNKS_DATA.printFindings();
 		constexpr double inputDataBits = POPULATION_CHUNKS_DATA.getEstimatedBits();
-		if (inputDataBits < 48.) std::fprintf(stderr, "\n\nWARNING: The input data very likely does not have enough information to reduce the search space to a single structure seed (%.2g/48 bits).\nIt is VERY HIGHLY recommended you gather more data and only afterwards run the program.\n", inputDataBits);
+		if (inputDataBits < 48.) std::fprintf(stderr, "WARNING: The input data very likely does not have enough information to reduce the search space to a single structure seed (%.2g/48 bits).\nIt is VERY HIGHLY recommended you gather more data and only afterwards run the program.\n\n", inputDataBits);
 		else {
 			constexpr double inputDataHighestPopulationChunkBits = POPULATION_CHUNKS_DATA.treeChunks[0].getEstimatedBits();
 			if (inputDataHighestPopulationChunkBits < 48.) std::fprintf(stderr, "\n\nWARNING: The input data's highest-information population chunk very likely does not have enough information to reduce the search space to a single structure seed by itself (%.2g/48 bits).\nOther chunks will be used later to account for this, but this program will run faster and use less memory if you gather more data and only afterwards run the program.\n", inputDataHighestPopulationChunkBits);
@@ -19,7 +19,7 @@ int main() {
 	}
 
 	void *theoreticalAttributesFilterMasksPointer;
-	TRY_CUDA(cudaGetSymbolAddress(&theoreticalAttributesFilterMasksPointer, theoreticalAttributesFilterMasks));
+	TRY_CUDA(cudaGetSymbolAddress(&theoreticalAttributesFilterMasksPointer, filter3_masks));
 
 	#if (!CUDA_IS_PRESENT)
 		threads = static_cast<pthread_t *>(malloc(NUMBER_OF_WORKERS*sizeof(*threads)));
@@ -47,92 +47,102 @@ int main() {
 				}
 			}
 			
-			if (theoreticalCoordsAndTypesFilterNumberOfResultsPerRun) {
-				std::fprintf(stderr, "Filter 1: %" PRIu64 " results\n", oneTreeFilterNumberOfResultsPerRun);
-				std::fprintf(stderr, "Filter 2: %" PRIu64 " results\n", theoreticalCoordsAndTypesFilterNumberOfResultsPerRun);
-				std::fprintf(stderr, "Filter 3: %" PRIu64 " results\n", theoreticalAttributesFilterNumberOfResultsPerRun);
-				std::fprintf(stderr, "Filter 4: %" PRIu64 " results\n", allAttributesFilterNumberOfResultsPerRun);
+			if (filter2_numberOfResultsPerRun) {
+				std::fprintf(stderr, "Filter 1: %" PRIu64 " results\n", filter1_numberOfResultsPerRun);
+				std::fprintf(stderr, "Filter 2: %" PRIu64 " results\n", filter2_numberOfResultsPerRun);
+				std::fprintf(stderr, "Filter 3: %" PRIu64 " results\n", filter3_numberOfResultsPerRun);
+				std::fprintf(stderr, "Filter 4: %" PRIu64 " results\n", treechunkFilter_numberOfResultsPerRun);
 				std::fprintf(stderr, "Filter 5: %" PRIu64 " results\n", totalStructureSeedsPerRun);
 				std::fprintf(stderr, "Filter 6: %" PRIu64 " results\n", totalWorldseedsPerRun);
 			}
 			
-			oneTreeFilterNumberOfResultsPerRun = theoreticalCoordsAndTypesFilterNumberOfResultsPerRun = theoreticalAttributesFilterNumberOfResultsPerRun = allAttributesFilterNumberOfResultsPerRun = totalStructureSeedsPerRun = totalWorldseedsPerRun = 0;
+			filter1_numberOfResultsPerRun = filter2_numberOfResultsPerRun = filter3_numberOfResultsPerRun = treechunkFilter_numberOfResultsPerRun = totalStructureSeedsPerRun = totalWorldseedsPerRun = 0;
+			currentPopulationChunkDataIndex = 0;
 
 			// NelS: Can this be moved?
-			if (COLLAPSE_NEARBY_SEEDS_FLAG) cudaMemsetAsync(theoreticalAttributesFilterMasksPointer, 0, sizeof(theoreticalAttributesFilterMasks));
+			if (COLLAPSE_NEARBY_SEEDS_FLAG) cudaMemsetAsync(theoreticalAttributesFilterMasksPointer, 0, sizeof(filter3_masks));
 
 			#if CUDA_IS_PRESENT
-				OneTreeFilter<<<constexprCeil(static_cast<double>(NUMBER_OF_WORKERS)/static_cast<double>(ACTUAL_WORKERS_PER_BLOCK)), ACTUAL_WORKERS_PER_BLOCK>>>(runCurrentSeed);
+				// filter1<<<constexprCeil(static_cast<double>(NUMBER_OF_WORKERS)/static_cast<double>(ACTUAL_WORKERS_PER_BLOCK)), ACTUAL_WORKERS_PER_BLOCK>>>(runCurrentSeed);
+				filter1<<<NUMBER_OF_WORKERS/ACTUAL_WORKERS_PER_BLOCK + 1, ACTUAL_WORKERS_PER_BLOCK>>>(runCurrentSeed);
 			#else
 				for (uint64_t i = 0; i < NUMBER_OF_WORKERS; ++i) {
 					data[i].start = runCurrentSeed;
-					pthread_create(&threads[i], NULL, OneTreeFilter, &data[i]);
+					pthread_create(&threads[i], NULL, filter1, &data[i]);
 				}
 			#endif
 			TRY_CUDA(cudaGetLastError());
 			TRY_CUDA(cudaDeviceSynchronize());
 
-			if (oneTreeFilterNumberOfResultsPerRun > ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) {
-				if (!SILENT_MODE) std::fprintf(stderr, "WARNING: One-Tree filter caught more results (%" PRIu64 ") than maximum number allowed (%" PRIu64 "); ignoring last %" PRIu64 " results.\n", oneTreeFilterNumberOfResultsPerRun, ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN, oneTreeFilterNumberOfResultsPerRun - ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN);
-				oneTreeFilterNumberOfResultsPerRun = ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN;
+			if (filter1_numberOfResultsPerRun > ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) {
+				if (!SILENT_MODE) std::fprintf(stderr, "WARNING: Filter 1 caught more results (%" PRIu64 ") than maximum number allowed (%" PRIu64 "); ignoring last %" PRIu64 " results.\n", filter1_numberOfResultsPerRun, ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN, filter1_numberOfResultsPerRun - ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN);
+				filter1_numberOfResultsPerRun = ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN;
 			}
-			if (!oneTreeFilterNumberOfResultsPerRun) continue;
+			if (!filter1_numberOfResultsPerRun) continue;
 
-			TRY_CUDA(cudaMemcpy(filterInputs, filterResults, sizeof(*filterResults)*oneTreeFilterNumberOfResultsPerRun, cudaMemcpyDefault));
+			// for (uint64_t i = 0; i < filter1_numberOfResultsPerRun; ++i) {
+
+			// }
+
+			TRY_CUDA(cudaMemcpy(filterInputs, filterResults, sizeof(*filterResults)*filter1_numberOfResultsPerRun, cudaMemcpyDefault));
 			#if CUDA_IS_PRESENT
-				theoreticalCoordsAndTypesFilter<<<constexprCeil(static_cast<double>(oneTreeFilterNumberOfResultsPerRun)/static_cast<double>(ACTUAL_WORKERS_PER_BLOCK)), ACTUAL_WORKERS_PER_BLOCK>>>();
+				// filter2<<<constexprCeil(static_cast<double>(filter1_numberOfResultsPerRun)/static_cast<double>(ACTUAL_WORKERS_PER_BLOCK)), ACTUAL_WORKERS_PER_BLOCK>>>();
+				filter2<<<filter1_numberOfResultsPerRun/ACTUAL_WORKERS_PER_BLOCK + 1, ACTUAL_WORKERS_PER_BLOCK>>>();
 			#else
-				for (uint64_t i = 0; i < oneTreeFilterNumberOfResultsPerRun; ++i) pthread_create(&threads[i], NULL, theoreticalCoordsAndTypesFilter, &data[i]);
+				for (uint64_t i = 0; i < filter1_numberOfResultsPerRun; ++i) pthread_create(&threads[i], NULL, filter2, &data[i]);
 			#endif
 			TRY_CUDA(cudaGetLastError());
 			TRY_CUDA(cudaDeviceSynchronize());
 
-			if (theoreticalCoordsAndTypesFilterNumberOfResultsPerRun > ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) {
-				if (!SILENT_MODE) std::fprintf(stderr, "WARNING: Theoretical-Coords-and-Types filter caught more results (%" PRIu64 ") than maximum number allowed (%" PRIu64 "); ignoring last %" PRIu64 " results.\n", theoreticalCoordsAndTypesFilterNumberOfResultsPerRun, ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN, theoreticalCoordsAndTypesFilterNumberOfResultsPerRun - ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN);
-				theoreticalCoordsAndTypesFilterNumberOfResultsPerRun = ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN;
+			if (filter2_numberOfResultsPerRun > ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) {
+				if (!SILENT_MODE) std::fprintf(stderr, "WARNING: Theoretical-Coords-and-Types filter caught more results (%" PRIu64 ") than maximum number allowed (%" PRIu64 "); ignoring last %" PRIu64 " results.\n", filter2_numberOfResultsPerRun, ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN, filter2_numberOfResultsPerRun - ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN);
+				filter2_numberOfResultsPerRun = ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN;
 			}
-			if (!theoreticalCoordsAndTypesFilterNumberOfResultsPerRun) continue;
+			if (!filter2_numberOfResultsPerRun) continue;
 
-			TRY_CUDA(cudaMemcpy(filterInputs, filterResults, sizeof(*filterResults)*theoreticalCoordsAndTypesFilterNumberOfResultsPerRun, cudaMemcpyDefault));
+			TRY_CUDA(cudaMemcpy(filterInputs, filterResults, sizeof(*filterResults)*filter2_numberOfResultsPerRun, cudaMemcpyDefault));
 			#if CUDA_IS_PRESENT
-				theoreticalAttributesFilter<<<constexprCeil(static_cast<double>(theoreticalCoordsAndTypesFilterNumberOfResultsPerRun)/static_cast<double>(ACTUAL_WORKERS_PER_BLOCK)), ACTUAL_WORKERS_PER_BLOCK>>>();
+				// filter3<<<constexprCeil(static_cast<double>(filter2_numberOfResultsPerRun)/static_cast<double>(ACTUAL_WORKERS_PER_BLOCK)), ACTUAL_WORKERS_PER_BLOCK>>>();
+				filter3<<<filter2_numberOfResultsPerRun/ACTUAL_WORKERS_PER_BLOCK + 1, ACTUAL_WORKERS_PER_BLOCK>>>();
 			#else
-				for (uint64_t i = 0; i < theoreticalCoordsAndTypesFilterNumberOfResultsPerRun; ++i) pthread_create(&threads[i], NULL, theoreticalAttributesFilter, &data[i]);
+				for (uint64_t i = 0; i < filter2_numberOfResultsPerRun; ++i) pthread_create(&threads[i], NULL, filter3, &data[i]);
 			#endif
 			TRY_CUDA(cudaGetLastError());
 			TRY_CUDA(cudaDeviceSynchronize());
 
-			if (theoreticalAttributesFilterNumberOfResultsPerRun > ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) {
-				if (!SILENT_MODE) std::fprintf(stderr, "WARNING: Theoretical-Attributes filter caught more results (%" PRIu64 ") than maximum number allowed (%" PRIu64 "); ignoring last %" PRIu64 " results.\n", theoreticalAttributesFilterNumberOfResultsPerRun, ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN, theoreticalAttributesFilterNumberOfResultsPerRun - ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN);
-				theoreticalAttributesFilterNumberOfResultsPerRun = ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN;
+			if (filter3_numberOfResultsPerRun > ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) {
+				if (!SILENT_MODE) std::fprintf(stderr, "WARNING: Theoretical-Attributes filter caught more results (%" PRIu64 ") than maximum number allowed (%" PRIu64 "); ignoring last %" PRIu64 " results.\n", filter3_numberOfResultsPerRun, ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN, filter3_numberOfResultsPerRun - ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN);
+				filter3_numberOfResultsPerRun = ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN;
 			}
-			if (!theoreticalAttributesFilterNumberOfResultsPerRun) continue;
+			if (!filter3_numberOfResultsPerRun) continue;
 
-			TRY_CUDA(cudaMemcpy(filterInputs, filterResults, sizeof(*filterResults)*theoreticalAttributesFilterNumberOfResultsPerRun, cudaMemcpyDefault));
+			TRY_CUDA(cudaMemcpy(filterInputs, filterResults, sizeof(*filterResults)*filter3_numberOfResultsPerRun, cudaMemcpyDefault));
 			#if CUDA_IS_PRESENT
-				allAttributesFilter<<<constexprCeil(static_cast<double>(theoreticalAttributesFilterNumberOfResultsPerRun * (MAX_CALLS + 1) * (UINT64_C(1) << MAX_TREE_COUNT))/static_cast<double>(ACTUAL_WORKERS_PER_BLOCK)), ACTUAL_WORKERS_PER_BLOCK>>>();
+				// treechunkFilter<<<constexprCeil(static_cast<double>(filter3_numberOfResultsPerRun * (MAX_CALLS + 1) * (UINT64_C(1) << POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex].maxTreeCount))/static_cast<double>(ACTUAL_WORKERS_PER_BLOCK)), ACTUAL_WORKERS_PER_BLOCK>>>();
+				treechunkFilter<<<filter3_numberOfResultsPerRun * (MAX_CALLS + 1) * (UINT64_C(1) << POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex].maxTreeCount)/ACTUAL_WORKERS_PER_BLOCK + 1, ACTUAL_WORKERS_PER_BLOCK>>>();
 			#else
-				for (uint64_t i = 0; i < theoreticalAttributesFilterNumberOfResultsPerRun; ++i) pthread_create(&threads[i], NULL, allAttributesFilter, &data[i]); // How to handle larger number of i's?
+				for (uint64_t i = 0; i < filter3_numberOfResultsPerRun; ++i) pthread_create(&threads[i], NULL, treechunkFilter, &data[i]); // How to handle larger number of i's?
 			#endif
 			TRY_CUDA(cudaGetLastError());
 			TRY_CUDA(cudaDeviceSynchronize());
 
-			if (allAttributesFilterNumberOfResultsPerRun > ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) {
-				if (!SILENT_MODE) std::fprintf(stderr, "WARNING: All-Attributes filter caught more results (%" PRIu64 ") than maximum number allowed (%" PRIu64 "); ignoring last %" PRIu64 " results.\n", allAttributesFilterNumberOfResultsPerRun, ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN, allAttributesFilterNumberOfResultsPerRun - ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN);
-				allAttributesFilterNumberOfResultsPerRun = ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN;
+			if (treechunkFilter_numberOfResultsPerRun > ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) {
+				if (!SILENT_MODE) std::fprintf(stderr, "WARNING: All-Attributes filter caught more results (%" PRIu64 ") than maximum number allowed (%" PRIu64 "); ignoring last %" PRIu64 " results.\n", treechunkFilter_numberOfResultsPerRun, ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN, treechunkFilter_numberOfResultsPerRun - ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN);
+				treechunkFilter_numberOfResultsPerRun = ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN;
 			}
-			if (!allAttributesFilterNumberOfResultsPerRun) continue;
+			if (!treechunkFilter_numberOfResultsPerRun) continue;
 
-			TRY_CUDA(cudaMemcpy(filterInputs, filterResults, sizeof(*filterResults)*allAttributesFilterNumberOfResultsPerRun, cudaMemcpyDefault));
+			TRY_CUDA(cudaMemcpy(filterInputs, filterResults, sizeof(*filterResults)*treechunkFilter_numberOfResultsPerRun, cudaMemcpyDefault));
 			// 1.6.4:         ?
 			// 1.8.9:         ?
 			// 1.12.2:        ./main input.txt output.txt 1 1.12 treechunkXChunkCoordinate treechunkXChunkCoordinate treechunkZChunkCoordinate treechunkZChunkCoordinate 0 10000
 			// 1.14.4:        ./main input.txt output.txt 1 1.13 60001 treechunkXChunkCoordinate treechunkXChunkCoordinate treechunkZChunkCoordinate treechunkZChunkCoordinate 0 0
 			// 1.16.1/1.16.4: ./main input.txt output.txt 1 1.13 80001 treechunkXChunkCoordinate treechunkXChunkCoordinate treechunkZChunkCoordinate treechunkZChunkCoordinate 0 0
 			#if CUDA_IS_PRESENT
-				reversePopulationSeeds<<<constexprCeil(static_cast<double>(allAttributesFilterNumberOfResultsPerRun)/static_cast<double>(ACTUAL_WORKERS_PER_BLOCK)), ACTUAL_WORKERS_PER_BLOCK>>>();
+				// reversePopulationSeeds<<<constexprCeil(static_cast<double>(treechunkFilter_numberOfResultsPerRun)/static_cast<double>(ACTUAL_WORKERS_PER_BLOCK)), ACTUAL_WORKERS_PER_BLOCK>>>();
+				reversePopulationSeeds<<<treechunkFilter_numberOfResultsPerRun/ACTUAL_WORKERS_PER_BLOCK + 1, ACTUAL_WORKERS_PER_BLOCK>>>();
 			#else
-				for (uint64_t i = 0; i < allAttributesFilterNumberOfResultsPerRun; ++i) pthread_create(&threads[i], NULL, reversePopulationSeeds, &data[i]);
+				for (uint64_t i = 0; i < treechunkFilter_numberOfResultsPerRun; ++i) pthread_create(&threads[i], NULL, reversePopulationSeeds, &data[i]);
 			#endif
 			TRY_CUDA(cudaGetLastError());
 			TRY_CUDA(cudaDeviceSynchronize());
@@ -143,7 +153,7 @@ int main() {
 			}
 			if (!totalStructureSeedsPerRun) continue;
 
-			for (uint32_t i = 1; i < POPULATION_CHUNKS_DATA.numberOfTreeChunks; ++i) {
+			for (currentPopulationChunkDataIndex = 1; currentPopulationChunkDataIndex < POPULATION_CHUNKS_DATA.numberOfTreeChunks; ++currentPopulationChunkDataIndex) {
 				// TODO: Second.cu filtering with other tree chunks
 			}
 
@@ -152,7 +162,8 @@ int main() {
 			for (largeBiomesFlag = 0; largeBiomesFlag <= 1; ++largeBiomesFlag) {
 				totalWorldseedsPerRun = 0;
 				#if CUDA_IS_PRESENT
-					biomeFilter<<<constexprCeil(static_cast<double>(totalStructureSeedsPerRun*65536)/static_cast<double>(ACTUAL_WORKERS_PER_BLOCK)), ACTUAL_WORKERS_PER_BLOCK>>>();
+					// biomeFilter<<<constexprCeil(static_cast<double>(totalStructureSeedsPerRun*65536)/static_cast<double>(ACTUAL_WORKERS_PER_BLOCK)), ACTUAL_WORKERS_PER_BLOCK>>>();
+					biomeFilter<<<totalStructureSeedsPerRun*65536/ACTUAL_WORKERS_PER_BLOCK + 1, ACTUAL_WORKERS_PER_BLOCK>>>();
 				#else
 					for (uint64_t i = 0; i < totalStructureSeedsPerRun; ++i) pthread_create(&threads[i], NULL, biomeFilter, &data[i]);
 				#endif

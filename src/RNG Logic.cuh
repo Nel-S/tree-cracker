@@ -1,7 +1,7 @@
 #ifndef __RNG_CUH
 #define __RNG_CUH
 
-#include "Base.cuh"
+#include "Base Logic.cuh"
 
 struct LCG {
 	static constexpr uint64_t MULTIPLIER = UINT64_C(0x5deece66d);

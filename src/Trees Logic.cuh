@@ -1,10 +1,8 @@
 #ifndef __TREES_CUH
 #define __TREES_CUH
 
-#include "RNG.cuh"
-#include "../AllowedValuesForSettings.cuh"
-// #include <cmath>
-// #include <string>
+#include "RNG Logic.cuh"
+#include "../Allowed Values for Settings.cuh"
 
 // Given a block coordinate along one axis, and the version, returns the corresponding population chunk coordinate along that axis.
 __device__ constexpr int32_t getPopulationChunkCoordinate(const int32_t blockCoordinate, const Version version) noexcept {
@@ -74,7 +72,7 @@ __device__ constexpr bool biomeContainsTreeType(const Biome biome, const TreeTyp
 
 // Given a Random instance, returns the next type of tree that would generate within the specified biome under the specified version.
 // Random will be advanced 0-4 times.
-__device__ TreeType getNextTreeType(Random &random, const Biome biome, const Version version) {
+__host__ __device__ TreeType getNextTreeType(Random &random, const Biome biome, const Version version) {
 	switch (biome) {
 		case Biome::Forest:
 			if (version <= Version::v1_6_4) {
@@ -106,8 +104,9 @@ __device__ TreeType getNextTreeType(Random &random, const Biome biome, const Ver
 	}
 }
 
-// Returns the minimum number of trees a specified biome under a specified version can generate per population chunk.
-__device__ constexpr int32_t biomeMinTreeCount(const Biome biome, const Version version) {
+/* Returns the minimum number of trees a specified biome under a specified version can ATTEMPT TO generate per population chunk.
+   If the selected in-game world positions would be invalid for the trees, the number actually generated will be fewer.*/
+__host__ __device__ constexpr int32_t biomeMinTreeCount(const Biome biome, const Version version) {
 	switch (biome) {
 		case Biome::Forest:
 		case Biome::Birch_Forest:
@@ -123,12 +122,13 @@ __device__ constexpr int32_t biomeMinTreeCount(const Biome biome, const Version 
 }
 
 // Returns the chance a specified biome under a specified version will generate an extra tree per population chunk.
-__device__ constexpr float biomeExtraTreeChance(const Biome biome, const Version version) {
+__host__ __device__ constexpr float biomeExtraTreeChance(const Biome biome, const Version version) {
 	return 0.1f;
 }
 
-// Returns the maximum number of trees a specified biome under a specified version can generate per population chunk.
-__device__ constexpr int32_t biomeMaxTreeCount(const Biome biome, const Version version) {
+/* Returns the maximum number of trees a specified biome under a specified version can ATTEMPT TO generate per population chunk.
+   If the selected in-game world positions would be invalid for the trees, the number actually generated will be fewer.*/
+__host__ __device__ constexpr int32_t biomeMaxTreeCount(const Biome biome, const Version version) {
 	int32_t minTreeCount = biomeMinTreeCount(biome, version);
 	#if CUDA_IS_PRESENT
 		if (minTreeCount == INT32_MIN) return INT32_MIN;
@@ -138,9 +138,10 @@ __device__ constexpr int32_t biomeMaxTreeCount(const Biome biome, const Version 
 	return minTreeCount + static_cast<int32_t>(biomeExtraTreeChance(biome, version) != 0.0f);
 }
 
-// Given a Random instance, returns the number of trees a specified biome under a specified version will generate.
-// Random will be advanced 1-2 times.
-__device__ int32_t biomeTreeCount(Random &random, const Biome biome, const Version version) {
+/* Given a Random instance, returns the number of trees a specified biome under a specified version will ATTEMPT TO generate.
+   If the selected in-game world positions would be invalid for the trees, the number actually generated will be fewer.
+   Random will be advanced 1-2 times.*/
+__host__ __device__ uint32_t biomeTreeCount(Random &random, const Biome biome, const Version version) {
 	int32_t treeCount = biomeMinTreeCount(biome, version);
 
 	if (version <= Version::v1_8_9) return treeCount + static_cast<int32_t>(!random.nextInt(10));
@@ -201,21 +202,21 @@ struct SetOfLeafStates {
 	__device__ bool canBeGeneratedBy(Random &random, const Version version) const noexcept {
 		// Andrew: Only tested on 1.16.1
 		if (Version::v1_14_4 < version && version <= Version::v1_16_1) random.skip<2>();
-		if (((this->mask >> (16     ) & 1) && (this->mask       & 1) != Random(random).nextInt< 1>(2)) || 
+		if (((this->mask >> (16     ) & 1) && (this->mask       & 1) != Random(random).nextInt< 1>(2)) ||
 			((this->mask >> (16 +  1) & 1) && (this->mask >>  1 & 1) != Random(random).nextInt< 2>(2)) ||
 			((this->mask >> (16 +  2) & 1) && (this->mask >>  2 & 1) != Random(random).nextInt< 3>(2)) ||
-			((this->mask >> (16 +  3) & 1) && (this->mask >>  3 & 1) != Random(random).nextInt< 4>(2)) || 
-			((this->mask >> (16 +  4) & 1) && (this->mask >>  4 & 1) != Random(random).nextInt< 5>(2)) || 
-			((this->mask >> (16 +  5) & 1) && (this->mask >>  5 & 1) != Random(random).nextInt< 6>(2)) || 
-			((this->mask >> (16 +  6) & 1) && (this->mask >>  6 & 1) != Random(random).nextInt< 7>(2)) || 
-			((this->mask >> (16 +  7) & 1) && (this->mask >>  7 & 1) != Random(random).nextInt< 8>(2)) || 
-			((this->mask >> (16 +  8) & 1) && (this->mask >>  8 & 1) != Random(random).nextInt< 9>(2)) || 
-			((this->mask >> (16 +  9) & 1) && (this->mask >>  9 & 1) != Random(random).nextInt<10>(2)) || 
-			((this->mask >> (16 + 10) & 1) && (this->mask >> 10 & 1) != Random(random).nextInt<11>(2)) || 
-			((this->mask >> (16 + 11) & 1) && (this->mask >> 11 & 1) != Random(random).nextInt<12>(2)) || 
-			((this->mask >> (16 + 12) & 1) && (this->mask >> 12 & 1) != Random(random).nextInt<13>(2)) || 
-			((this->mask >> (16 + 13) & 1) && (this->mask >> 13 & 1) != Random(random).nextInt<14>(2)) || 
-			((this->mask >> (16 + 14) & 1) && (this->mask >> 14 & 1) != Random(random).nextInt<15>(2)) || 
+			((this->mask >> (16 +  3) & 1) && (this->mask >>  3 & 1) != Random(random).nextInt< 4>(2)) ||
+			((this->mask >> (16 +  4) & 1) && (this->mask >>  4 & 1) != Random(random).nextInt< 5>(2)) ||
+			((this->mask >> (16 +  5) & 1) && (this->mask >>  5 & 1) != Random(random).nextInt< 6>(2)) ||
+			((this->mask >> (16 +  6) & 1) && (this->mask >>  6 & 1) != Random(random).nextInt< 7>(2)) ||
+			((this->mask >> (16 +  7) & 1) && (this->mask >>  7 & 1) != Random(random).nextInt< 8>(2)) ||
+			((this->mask >> (16 +  8) & 1) && (this->mask >>  8 & 1) != Random(random).nextInt< 9>(2)) ||
+			((this->mask >> (16 +  9) & 1) && (this->mask >>  9 & 1) != Random(random).nextInt<10>(2)) ||
+			((this->mask >> (16 + 10) & 1) && (this->mask >> 10 & 1) != Random(random).nextInt<11>(2)) ||
+			((this->mask >> (16 + 11) & 1) && (this->mask >> 11 & 1) != Random(random).nextInt<12>(2)) ||
+			((this->mask >> (16 + 12) & 1) && (this->mask >> 12 & 1) != Random(random).nextInt<13>(2)) ||
+			((this->mask >> (16 + 13) & 1) && (this->mask >> 13 & 1) != Random(random).nextInt<14>(2)) ||
+			((this->mask >> (16 + 14) & 1) && (this->mask >> 14 & 1) != Random(random).nextInt<15>(2)) ||
 			((this->mask >> (16 + 15) & 1) && (this->mask >> 15 & 1) != Random(random).nextInt<16>(2))) return false;
 		random.skip<16>();
 		// #pragma unroll
@@ -226,7 +227,7 @@ struct SetOfLeafStates {
 		//         return false;
 		//     }
 		// }
-		
+
 		return true;
 	}
 
@@ -239,14 +240,14 @@ struct SetOfLeafStates {
 struct TrunkHeight {
 	// Returns the next pseudorandom integer in the range [a, a + b], uniformly distributed.
 	// Random will be advanced 1-2 times.
-	__device__ static uint32_t getNextValueInRange(Random &random, const uint32_t a, const uint32_t b) noexcept {
+	__host__ __device__ static uint32_t getNextValueInRange(Random &random, const uint32_t a, const uint32_t b) noexcept {
 		return a + random.nextInt(b + 1);
 	}
 
 	// Returns the next pseudorandom integer in the range [a, a + b + c].
 	// If c == 0, this is equivalent to ::getNextValueInRange(random, a, b) with an extra state advancement. Random will be advanced 2-3 times.
 	// Otherwise the result is triangularly(?) distributed with (b+c)/2 as the highest point. Random will be advanced 2-4 times.
-	__device__ static uint32_t getNextValueInRange(Random &random, const uint32_t a, const uint32_t b, const uint32_t c) noexcept {
+	__host__ __device__ static uint32_t getNextValueInRange(Random &random, const uint32_t a, const uint32_t b, const uint32_t c) noexcept {
 		return a + random.nextInt(b + 1) + random.nextInt(c + 1);
 	}
 };
@@ -284,8 +285,11 @@ struct OakAttributes {
 			this->leafStates.getEstimatedBits();
 	}
 
-	// The Random instance will be advanced ...
-	__device__ static void skip(Random &random, const bool generated, const Version version) noexcept {
+	/* Fast-forwards the Random instance, as if a tree under the specified version had been generated, without actually
+	   calculating its attributes.
+	   A tree's generation can abort early (causing fewer Random advancements) if the in-game world is unsuitable--dirt/grass
+	   is not present, another tree is too close, etc. If this is the case, set isValidIngamePosition to false.*/
+	__device__ static void skip(Random &random, const bool isValidIngamePosition, const Version version) noexcept {
 		// Andrew: Maybe 1.15, idk
 		if (version <= Version::v1_14_4) TrunkHeight::getNextValueInRange(random, 4, 2);
 		else {
@@ -296,7 +300,7 @@ struct OakAttributes {
 			}
 		}
 
-		if (generated) {
+		if (isValidIngamePosition) {
 			if (version <= Version::v1_14_4) random.skip<16>();
 			else if (version <= Version::v1_16_1) {
 				// Andrew: + 2nd extra leaf call + beehive
@@ -348,16 +352,20 @@ struct LargeOakAttributes {
 		return constexprLog2(static_cast<double>(LargeOakAttributes::TRUNK_HEIGHT_BOUNDS.getRange())/static_cast<double>(trunkHeight.getRange()));
 	}
 
-	__device__ static void skip(Random &random, const bool generated, const Version version) {
+	/* Fast-forwards the Random instance, as if a tree under the specified version had been generated, without actually
+	   calculating its attributes.
+	   A tree's generation can abort early (causing fewer Random advancements) if the in-game world is unsuitable--dirt/grass
+	   is not present, another tree is too close, etc. If this is the case, set isValidIngamePosition to false.*/
+	__device__ static void skip(Random &random, const bool isValidIngamePosition, const Version version) {
 		// Andrew: Maybe 1.15, idk
 		if (version <= Version::v1_14_4) random.skip<2>();
 		else if (version <= Version::v1_16_1) {
 			uint32_t trunkHeight = TrunkHeight::getNextValueInRange(random, 3, 11, 0);
-			
+
 			// Andrew: extra leaf calls
 			random.skip<1>();
 
-			if (generated) {
+			if (isValidIngamePosition) {
 				// NelS: Woah, oh, oh, it's MAGIC!
 				uint32_t branchCount = (0x765543321000 >> ((trunkHeight - 3) * 4)) & 0xF;
 				uint32_t blobCount = 1;
@@ -382,8 +390,8 @@ struct LargeOakAttributes {
 			}
 		} else {
 			uint32_t trunkHeight = TrunkHeight::getNextValueInRange(random, 3, 11, 0);
-			
-			if (generated) {
+
+			if (isValidIngamePosition) {
 				// Andrew: Trunk 0 - 14
 				uint32_t branchCount = (0x765543321000 >> (4*trunkHeight - 12)) & 0xf;
 				if (branchCount & 4) random.skip<8>();
@@ -427,7 +435,11 @@ struct BirchAttributes {
 			this->leafStates.getEstimatedBits();
 	}
 
-	__device__ static void skip(Random &random, const bool generated, const Version version) {
+	/* Fast-forwards the Random instance, as if a tree under the specified version had been generated, without actually
+	   calculating its attributes.
+	   A tree's generation can abort early (causing fewer Random advancements) if the in-game world is unsuitable--dirt/grass
+	   is not present, another tree is too close, etc. If this is the case, set isValidIngamePosition to false.*/
+	__device__ static void skip(Random &random, const bool isValidIngamePosition, const Version version) {
 		// Andrew: Maybe 1.15, idk
 		if (version <= Version::v1_14_4) {
 			TrunkHeight::getNextValueInRange(random, 5, 2);
@@ -440,7 +452,7 @@ struct BirchAttributes {
 			random.skip<1>();
 		}
 
-		if (generated) {
+		if (isValidIngamePosition) {
 			if (version <= Version::v1_14_4) {
 				random.skip<16>();
 			} else if (version <= Version::v1_16_1) {
@@ -491,7 +503,11 @@ struct PineAttributes {
 			constexprLog2(static_cast<double>(PineAttributes::LEAVES_WIDEST_RADIUS_BOUNDS.getRange())/static_cast<double>(leavesWidestRadius.getRange()));
 	}
 
-	__device__ static void skip(Random &random, const bool generated, const Version version) {
+	/* Fast-forwards the Random instance, as if a tree under the specified version had been generated, without actually
+	   calculating its attributes.
+	   A tree's generation can abort early (causing fewer Random advancements) if the in-game world is unsuitable--dirt/grass
+	   is not present, another tree is too close, etc. If this is the case, set isValidIngamePosition to false.*/
+	__device__ static void skip(Random &random, const bool isValidIngamePosition, const Version version) {
 		TrunkHeight::getNextValueInRange(random, 7, 4);
 		uint32_t generatedLeavesHeight = 3 + random.nextInt(2);
 		// uint32_t generatedLeavesWidestRadius = 1 + random.nextInt(generatedLeavesHeight + 1);
@@ -529,7 +545,7 @@ struct SpruceAttributes {
 		leavesWidestRadius(other.leavesWidestRadius, SpruceAttributes::LEAVES_WIDEST_RADIUS_BOUNDS),
 		topmostLeavesRadius(other.topmostLeavesRadius, SpruceAttributes::TOPMOST_LEAVES_RADIUS_BOUNDS) {}
 	__device__ constexpr SpruceAttributes(const PossibleHeightsRange &trunkHeight, const PossibleHeightsRange &logsBelowBottommostLeaves, const PossibleRadiiRange &leavesWidestRadius, const PossibleRadiiRange &topmostLeavesRadius, const PossibleRadiiRange &leavesAboveTrunk) :
-		trunkHeight({trunkHeight.lowerBound + leavesAboveTrunk.lowerBound - 1, trunkHeight.upperBound + leavesAboveTrunk.upperBound - 1}, SpruceAttributes::TRUNK_HEIGHT_BOUNDS), 
+		trunkHeight({trunkHeight.lowerBound + leavesAboveTrunk.lowerBound - 1, trunkHeight.upperBound + leavesAboveTrunk.upperBound - 1}, SpruceAttributes::TRUNK_HEIGHT_BOUNDS),
 		logsBelowBottommostLeaves(logsBelowBottommostLeaves, SpruceAttributes::LOGS_BELOW_BOTTOMMOST_LEAVES_BOUNDS),
 		leavesAboveTrunk({leavesAboveTrunk.lowerBound - 1, leavesAboveTrunk.upperBound - 1}, SpruceAttributes::LEAVES_ABOVE_TRUNK_BOUNDS),
 		leavesWidestRadius(leavesWidestRadius, SpruceAttributes::LEAVES_WIDEST_RADIUS_BOUNDS),
@@ -554,8 +570,8 @@ struct SpruceAttributes {
 			constexprLog2(static_cast<double>(SpruceAttributes::TOPMOST_LEAVES_RADIUS_BOUNDS.getRange())/static_cast<double>(topmostLeavesRadius.getRange()));
 	}
 
-	__device__ static void skip(Random &random, const bool generated, const Version version) {
-		if (generated) {
+	__device__ static void skip(Random &random, const bool isValidIngamePosition, const Version version) {
+		if (isValidIngamePosition) {
 			random.skip<4>();
 			random.nextInt(3);
 		} else random.skip<3>();
@@ -599,7 +615,7 @@ struct TreeChunkPosition {
 		if (this->possibleTreeTypes.isEmpty()) return true;
 		TreeType type = getNextTreeType(random, biome, version);
 		if (!this->possibleTreeTypes.contains(type)) return false;
-	
+
 		switch (type) {
 			case TreeType::Oak:       return this->oakAttributes.canBeGeneratedBy(random, version);
 			case TreeType::Large_Oak: return this->largeOakAttributes.canBeGeneratedBy(random, version);
@@ -669,26 +685,30 @@ struct TreeChunkPosition {
 
 	}
 
-	__device__ static void skip(Random &random, const Biome biome, const bool generated, const Version version) {
+	/* Fast-forwards the Random instance, as if a tree under the specified biome and version had been generated, without actually 
+	   calculating its attributes.
+	   A tree's generation can abort early (causing fewer Random advancements) if the in-game world is unsuitable--dirt/grass
+	   is not present, another tree is too close, etc. If this is the case, set isValidIngamePosition to false.*/
+	__device__ static void skip(Random &random, const Biome biome, const bool isValidIngamePosition, const Version version) {
 		// uint32_t populationChunkXOffset = random.nextInt(16);
 		// uint32_t populationChunkZOffset = random.nextInt(16);
 		random.skip<2>();
-	
+
 		switch (getNextTreeType(random, biome, version)) {
 			case TreeType::Oak:
-				OakAttributes::skip(random, generated, version);
+				OakAttributes::skip(random, isValidIngamePosition, version);
 				break;
 			case TreeType::Large_Oak:
-				LargeOakAttributes::skip(random, generated, version);
+				LargeOakAttributes::skip(random, isValidIngamePosition, version);
 				break;
 			case TreeType::Birch:
-				BirchAttributes::skip(random, generated, version);
+				BirchAttributes::skip(random, isValidIngamePosition, version);
 				break;
 			case TreeType::Pine:
-				PineAttributes::skip(random, generated, version);
+				PineAttributes::skip(random, isValidIngamePosition, version);
 				break;
 			case TreeType::Spruce:
-				SpruceAttributes::skip(random, generated, version);
+				SpruceAttributes::skip(random, isValidIngamePosition, version);
 				break;
 			default:
 				#if CUDA_IS_PRESENT
@@ -706,6 +726,10 @@ struct TreeChunk {
 	int32_t populationChunkX, populationChunkZ;
 	TreeChunkPosition treePositions[16];
 	uint32_t numberOfTreePositions;
+	int32_t maxCalls, maxTreeCount, rangeOfPossibleSkips;
+	uint64_t salt;
+	// Might only need this for first population chunk instead of all population chunks, in which case it'd be better to have this as a global constexpr variable
+	// bool collapseNearbySeedsFlag;
 
 	__device__ constexpr TreeChunk() noexcept :
 		version(),
@@ -713,21 +737,45 @@ struct TreeChunk {
 		populationChunkX(),
 		populationChunkZ(),
 		treePositions(),
-		numberOfTreePositions(0) {}
+		numberOfTreePositions(0),
+		maxCalls(),
+		maxTreeCount(),
+		rangeOfPossibleSkips(),
+		salt()
+		// , collapseNearbySeedsFlag(),
+		{}
 	__device__ constexpr TreeChunk(const Biome biome, const Version version) noexcept :
 		version(version),
 		biome(biome),
 		populationChunkX(),
 		populationChunkZ(),
 		treePositions(),
-		numberOfTreePositions(0) {}
+		numberOfTreePositions(0),
+		maxCalls(biomeMaxRandomCalls(biome, version)),
+		maxTreeCount(biomeMaxTreeCount(biome, version)),
+		rangeOfPossibleSkips(1 + (version <= Version::v1_12_2 ? 10000 : maxCalls)),
+		// Andrew:
+		// 1.14.4 Forest - 60001
+		// 1.16.4 Forest - 80001 ??? Not sure if that's what it was
+		salt(version <= Version::v1_14_4 ? 60001 : 80001)
+		// , collapseNearbySeedsFlag(version <= Version::v1_12_2),
+		{}
 	__device__ constexpr TreeChunk(const Biome biome, const Version version, const int32_t populationChunkX, const int32_t populationChunkZ) noexcept :
 		version(version),
 		biome(biome),
 		populationChunkX(populationChunkX),
 		populationChunkZ(populationChunkZ),
 		treePositions(),
-		numberOfTreePositions(0) {}
+		numberOfTreePositions(0),
+		maxCalls(biomeMaxRandomCalls(biome, version)),
+		maxTreeCount(biomeMaxTreeCount(biome, version)),
+		rangeOfPossibleSkips(1 + (version <= Version::v1_12_2 ? 10000 : maxCalls)),
+		// Andrew:
+		// 1.14.4 Forest - 60001
+		// 1.16.4 Forest - 80001 ??? Not sure if that's what it was
+		salt(version <= Version::v1_14_4 ? 60001 : 80001)
+		// , collapseNearbySeedsFlag(version <= Version::v1_12_2)
+		{}
 
 	__device__ constexpr TreeChunkPosition &createNewTree(const int32_t x, const int32_t z, const TreeType treeType) {
 		if (!biomeContainsTreeType(this->biome, treeType, this->version)) {

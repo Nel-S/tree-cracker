@@ -1,7 +1,7 @@
 #ifndef __BASE_CUH
 #define __BASE_CUH
 
-#include "nonCudaSupport.cuh"
+#include "Non-CUDA Support.cuh"
 
 // Returns the compile-time minimum of a and b.
 __host__ __device__ constexpr int32_t constexprMin(const int32_t a, const int32_t b) {
@@ -155,4 +155,28 @@ struct IntInclusiveRange {
 typedef IntInclusiveRange PossibleHeightsRange;
 typedef IntInclusiveRange PossibleRadiiRange;
 
+
+// An inclusive range of 32-bit integers.
+struct CoordInclusiveRange {
+	Coordinate lowerBound, upperBound;
+	static constexpr Coordinate NO_MINIMUM = {INT32_MIN, INT32_MIN};
+	static constexpr Coordinate NO_MAXIMUM = {INT32_MAX, INT32_MAX};
+
+	__host__ __device__ constexpr CoordInclusiveRange() noexcept : lowerBound(CoordInclusiveRange::NO_MINIMUM), upperBound(CoordInclusiveRange::NO_MAXIMUM) {}
+	__device__ constexpr CoordInclusiveRange(const CoordInclusiveRange &other) noexcept : lowerBound(other.lowerBound), upperBound(other.upperBound) {}
+	__device__ constexpr CoordInclusiveRange(Coordinate value) noexcept : lowerBound(value), upperBound(value) {}
+	__device__ constexpr CoordInclusiveRange(Coordinate lowerBound, Coordinate upperBound) noexcept : lowerBound{constexprMin(lowerBound.x, upperBound.x), constexprMin(lowerBound.z, upperBound.z)}, upperBound{constexprMax(lowerBound.x, upperBound.x), constexprMax(lowerBound.z, upperBound.z)} {}
+	// Initialize based on the intersection of two ranges.
+	__device__ constexpr CoordInclusiveRange(const CoordInclusiveRange &range1, const CoordInclusiveRange &range2) noexcept : lowerBound{constexprMax(range1.lowerBound.x, range2.lowerBound.x), constexprMax(range1.lowerBound.z, range2.lowerBound.z)}, upperBound{constexprMin(range1.upperBound.x, range2.upperBound.x), constexprMin(range1.upperBound.z, range2.upperBound.z)} {}
+
+	// Returns if a value falls within the range.
+	__host__ __device__ constexpr bool contains(Coordinate value) const noexcept {
+		return this->lowerBound.x <= value.x && value.x <= this->upperBound.x && this->lowerBound.z <= value.z && value.z <= this->upperBound.z;
+	}
+
+	// Returns the range's range.
+	__host__ __device__ constexpr Coordinate getRange() const noexcept {
+		return {this->upperBound.x - this->lowerBound.x + 1, this->upperBound.z - this->lowerBound.z + 1};
+	}
+};
 #endif

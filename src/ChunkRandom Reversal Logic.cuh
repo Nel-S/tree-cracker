@@ -1,7 +1,7 @@
 #ifndef __CHUNK_RANDOM_REVERSAL_CUH
 #define __CHUNK_RANDOM_REVERSAL_CUH
 
-#include "GenerateAndValidateData.cuh"
+#include "Settings and Input Data Processing.cuh"
 
 __managed__ uint64_t totalStructureSeedsPerRun = 0;
 
@@ -192,7 +192,7 @@ __device__ void reverse_1_12_populationSeed(const uint64_t populationSeed, const
 	uint64_t xored_structure_seed_low = (populationSeed ^ M1) & getBitmask(xz_zeros + 1) ^ ((x_zeros != z_zeros) << xz_zeros);
 	for (; xored_structure_seed_low < twoToThePowerOf(16); xored_structure_seed_low += twoToThePowerOf(xz_zeros + 1)) {
 		uint64_t addend_const_no_offset = x * ((xored_structure_seed_low * M2 + A2) >> 16) + z * ((xored_structure_seed_low * M4 + A4) >> 16);
-		
+
 		for (int32_t k = 0; k < offsetsLength; k++) {
 			uint64_t offset = offsets[k];
 
@@ -218,7 +218,7 @@ __device__ void reverse_1_12_populationSeed(const uint64_t populationSeed, const
 
 					break;
 				}
-				
+
 				if ((mult_result & getBitmask(constant_mult_zeros)) != 0) {
 					invalid = true;
 					break;
@@ -282,7 +282,7 @@ __device__ void reverse_1_13_populationSeed(const uint64_t populationSeed, const
 	uint64_t xored_structure_seed_low = (populationSeed ^ M1) & getBitmask(xz_zeros + 1) ^ ((x_zeros != z_zeros) << xz_zeros);
 	for (; xored_structure_seed_low < twoToThePowerOf(16); xored_structure_seed_low += twoToThePowerOf(xz_zeros + 1)) {
 		uint64_t addend_const_no_offset = x * ((xored_structure_seed_low * M2 + A2) >> 16) + z * ((xored_structure_seed_low * M4 + A4) >> 16);
-		
+
 		for (int32_t k = 0; k < offsetsLength; k++) {
 			uint64_t offset = offsets[k];
 
@@ -308,7 +308,7 @@ __device__ void reverse_1_13_populationSeed(const uint64_t populationSeed, const
 
 					break;
 				}
-				
+
 				if ((mult_result & getBitmask(constant_mult_zeros)) != 0) {
 					invalid = true;
 					break;

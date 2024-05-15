@@ -1,12 +1,16 @@
 /*
    Settings that haven't been fully implemented yet.
-   If you are not helping to develop the program, I'd recommend not messing with these.
+   There are no guarantees about what messing with these will do to the program at large, so I recommend leaving them as is.
 */
 
 #ifndef __EXPERIMENTAL_SETTINGS_CUH
 #define __EXPERIMENTAL_SETTINGS_CUH
 
 #include "../Settings (MODIFY THIS).cuh"
+
+enum class ExperimenalDevice {
+   CPU = 1
+};
 
 // The device one would prefer the program to run on.
 // Note that the program will run much, much slower on a CPU than with CUDA.

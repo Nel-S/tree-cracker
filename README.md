@@ -42,7 +42,7 @@ Then use `nvcc` to compile the program:
 ```
 Depending on your input data, the compilation may take almost a full minute or even longer.
 If you receive an error akin to `Stack size for entry function '_Z11biomeFilterv' cannot be statically determined`, do not worry. 
-5. Run the compiled program:
+6. Run the compiled program:
 ```bash
 (Linux)         .\main
 (Windows)       .\main.exe
