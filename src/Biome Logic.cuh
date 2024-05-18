@@ -19,12 +19,8 @@ __device__ constexpr size_t getIDsArraySize(const Version version, const bool la
 		case Version::v1_16_1:
 		case Version::v1_16_4:
 			return largeBiomes ? 8044 : 8095;
+		default: THROW_EXCEPTION(0, "ERROR: Unsupported version provided.\n")
 	}
-	#if CUDA_IS_PRESENT
-		return 0;
-	#else
-		throw std::invalid_argument("ERROR: Unsupported version.\n");
-	#endif
 }
 
 __device__ constexpr int biomeToCubiomesBiome(const Biome biome) {
@@ -32,12 +28,7 @@ __device__ constexpr int biomeToCubiomesBiome(const Biome biome) {
 		case Biome::Forest: return BiomeID::forest;
 		case Biome::Birch_Forest: return BiomeID::birch_forest;
 		case Biome::Taiga: return BiomeID::taiga;
-		default:
-			#if CUDA_IS_PRESENT
-				return BiomeID::none;
-			#else
-				throw std::invalid_argument("ERROR: Unsupported version provided.\n");
-			#endif
+		default: THROW_EXCEPTION(BiomeID::none, "ERROR: Unsupported biome provided.\n")
 	}
 }
 
@@ -49,12 +40,7 @@ __device__ constexpr int versionToCubiomesVersion(const Version version) {
 		case Version::v1_14_4: return MCVersion::MC_1_14_4;
 		case Version::v1_16_1: return MCVersion::MC_1_16_1;
 		case Version::v1_16_4: return MCVersion::MC_1_16_5;
-		default:
-			#if CUDA_IS_PRESENT
-				return MCVersion::MC_UNDEF;
-			#else
-				throw std::invalid_argument("ERROR: Unsupported version provided.\n");
-			#endif
+		default: THROW_EXCEPTION(MCVersion::MC_UNDEF, "ERROR: Unsupported version provided.\n")
 	}
 }
 

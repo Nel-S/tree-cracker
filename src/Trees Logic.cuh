@@ -16,7 +16,7 @@ __device__ constexpr uint32_t getOffsetWithinPopulationChunk(const int32_t block
 
 // Given a population chunk coordinate along one axis, and the version, returns its corresponding minimum block coordinate along that axis.
 __host__ __device__ constexpr int32_t getMinBlockCoordinate(const int32_t populationChunkCoordinate, const Version version) noexcept {
-	return 16*(populationChunkCoordinate + 8*static_cast<int32_t>(version <= Version::v1_12_2));
+	return 16*populationChunkCoordinate + 8*static_cast<int32_t>(version <= Version::v1_12_2);
 }
 
 // Given a population chunk coordinate along one axis, and the version, returns its corresponding maximum block coordinate along that axis.
@@ -61,12 +61,7 @@ __device__ constexpr bool biomeContainsTreeType(const Biome biome, const TreeTyp
 			return treeType == TreeType::Birch;
 		case Biome::Taiga:
 			return treeType == TreeType::Pine || treeType == TreeType::Spruce;
-		default:
-			#if CUDA_IS_PRESENT
-				return false;
-			#else
-				throw std::invalid_argument("Unsupported biome provided.");
-			#endif
+		default: THROW_EXCEPTION(false, "ERROR: Unsupported biome provided.\n")
 	}
 }
 
@@ -95,12 +90,7 @@ __host__ __device__ TreeType getNextTreeType(Random &random, const Biome biome, 
 		case Biome::Taiga:
 			if (!random.nextInt(3)) return TreeType::Pine;
 			return TreeType::Spruce;
-		default:
-			#if CUDA_IS_PRESENT
-				return TreeType::Unknown;
-			#else
-				throw std::invalid_argument("Unsupported biome provided.");
-			#endif
+		default: THROW_EXCEPTION(TreeType::Unknown, "ERROR: Unsupported biome provided.\n")
 	}
 }
 
@@ -112,12 +102,7 @@ __host__ __device__ constexpr int32_t biomeMinTreeCount(const Biome biome, const
 		case Biome::Birch_Forest:
 		case Biome::Taiga:
 			return 10;
-		default:
-			#if CUDA_IS_PRESENT
-				return INT32_MIN;
-			#else
-				throw std::invalid_argument("Unsupported biome provided.");
-			#endif
+		default: THROW_EXCEPTION(INT32_MIN, "ERROR: Unsupported biome provided.\n")
 	}
 }
 
@@ -157,12 +142,7 @@ __device__ constexpr int32_t biomeMaxRandomCalls(const Biome biome, const Versio
 			return biomeMaxTreeCount(biome, version) * 19;
 		case Biome::Taiga:
 			return biomeMaxTreeCount(biome, version) * 8;
-		default:
-			#if CUDA_IS_PRESENT
-				return 0;
-			#else
-				throw std::invalid_argument("Unsupported biome provided.");
-			#endif
+		default: THROW_EXCEPTION(0, "ERROR: Unsupported biome provided.\n")
 	}
 }
 
@@ -178,12 +158,7 @@ struct SetOfLeafStates {
 	__device__ constexpr SetOfLeafStates(const LeafState leafStates[NUMBER_OF_LEAF_POSITIONS], const Version version) : mask(0) {
 		// Make sure all leaf states were given a valid value
 		for (size_t i = 0; i < NUMBER_OF_LEAF_POSITIONS; i++) {
-			if (leafStates[i] < LeafState::LeafWasNotPlaced || LeafState::Unknown < leafStates[i])
-				#if CUDA_IS_PRESENT
-					return;
-				#else
-					throw std::invalid_argument("Invalid leafstate in index" + std::to_string(i) + ".");
-				#endif
+			if (leafStates[i] < LeafState::LeafWasNotPlaced || LeafState::Unknown < leafStates[i]) THROW_EXCEPTION(/*None*/, "ERROR: Invalid leafstate in index" + std::to_string(i) + ".\n")
 		}
 		for (int32_t y = 0; y < 3; y++) {
 			for (int32_t xz = 0; xz < 4; xz++) {
@@ -486,8 +461,9 @@ struct PineAttributes {
 		leavesHeight(other.leavesHeight, PineAttributes::LEAVES_HEIGHT_BOUNDS),
 		leavesWidestRadius(other.leavesWidestRadius, PineAttributes::LEAVES_WIDEST_RADIUS_BOUNDS) {}
 	__device__ constexpr PineAttributes(const PossibleHeightsRange &trunkHeight, const PossibleHeightsRange &leavesHeight, const PossibleRadiiRange &leavesWidestRadius) :
-		trunkHeight({trunkHeight.lowerBound + 1, trunkHeight.upperBound + 1}, PineAttributes::TRUNK_HEIGHT_BOUNDS),
-		leavesHeight({leavesHeight.lowerBound - 1, leavesHeight.upperBound - 1}, PineAttributes::LEAVES_HEIGHT_BOUNDS),
+		// Mins/maxs are to prevent overflows
+		trunkHeight({trunkHeight.lowerBound + 1, constexprMin(trunkHeight.upperBound, PineAttributes::TRUNK_HEIGHT_BOUNDS.upperBound) + 1}, PineAttributes::TRUNK_HEIGHT_BOUNDS),
+		leavesHeight({constexprMax(leavesHeight.lowerBound, PineAttributes::LEAVES_HEIGHT_BOUNDS.lowerBound) - 1, leavesHeight.upperBound - 1}, PineAttributes::LEAVES_HEIGHT_BOUNDS),
 		leavesWidestRadius(leavesWidestRadius, PineAttributes::LEAVES_WIDEST_RADIUS_BOUNDS) {}
 
 	__device__ bool canBeGeneratedBy(Random &random, const Version version) const {
@@ -545,9 +521,10 @@ struct SpruceAttributes {
 		leavesWidestRadius(other.leavesWidestRadius, SpruceAttributes::LEAVES_WIDEST_RADIUS_BOUNDS),
 		topmostLeavesRadius(other.topmostLeavesRadius, SpruceAttributes::TOPMOST_LEAVES_RADIUS_BOUNDS) {}
 	__device__ constexpr SpruceAttributes(const PossibleHeightsRange &trunkHeight, const PossibleHeightsRange &logsBelowBottommostLeaves, const PossibleRadiiRange &leavesWidestRadius, const PossibleRadiiRange &topmostLeavesRadius, const PossibleRadiiRange &leavesAboveTrunk) :
-		trunkHeight({trunkHeight.lowerBound + leavesAboveTrunk.lowerBound - 1, trunkHeight.upperBound + leavesAboveTrunk.upperBound - 1}, SpruceAttributes::TRUNK_HEIGHT_BOUNDS),
+		// Maxs/mins are to prevent overflows
+		trunkHeight({constexprMax(trunkHeight.lowerBound, SpruceAttributes::TRUNK_HEIGHT_BOUNDS.lowerBound) + constexprMax(leavesAboveTrunk.lowerBound, SpruceAttributes::LEAVES_ABOVE_TRUNK_BOUNDS.lowerBound) - 1, constexprMin(trunkHeight.upperBound, SpruceAttributes::TRUNK_HEIGHT_BOUNDS.upperBound) + constexprMin(leavesAboveTrunk.upperBound, SpruceAttributes::LEAVES_ABOVE_TRUNK_BOUNDS.upperBound) - 1}, SpruceAttributes::TRUNK_HEIGHT_BOUNDS),
 		logsBelowBottommostLeaves(logsBelowBottommostLeaves, SpruceAttributes::LOGS_BELOW_BOTTOMMOST_LEAVES_BOUNDS),
-		leavesAboveTrunk({leavesAboveTrunk.lowerBound - 1, leavesAboveTrunk.upperBound - 1}, SpruceAttributes::LEAVES_ABOVE_TRUNK_BOUNDS),
+		leavesAboveTrunk({constexprMax(leavesAboveTrunk.lowerBound, SpruceAttributes::LEAVES_ABOVE_TRUNK_BOUNDS.lowerBound) - 1, leavesAboveTrunk.upperBound - 1}, SpruceAttributes::LEAVES_ABOVE_TRUNK_BOUNDS),
 		leavesWidestRadius(leavesWidestRadius, SpruceAttributes::LEAVES_WIDEST_RADIUS_BOUNDS),
 		topmostLeavesRadius(topmostLeavesRadius, SpruceAttributes::TOPMOST_LEAVES_RADIUS_BOUNDS) {}
 
@@ -622,12 +599,7 @@ struct TreeChunkPosition {
 			case TreeType::Birch:     return this->birchAttributes.canBeGeneratedBy(random, version);
 			case TreeType::Pine:      return this->pineAttributes.canBeGeneratedBy(random, version);
 			case TreeType::Spruce:    return this->spruceAttributes.canBeGeneratedBy(random, version);
-			default:
-				#if CUDA_IS_PRESENT
-					return false;
-				#else
-					throw std::invalid_argument("Unsupported tree type provided.");
-				#endif
+			default: THROW_EXCEPTION(false, "ERROR: Unsupported tree type provided.\n")
 		}
 	}
 
@@ -674,7 +646,6 @@ struct TreeChunkPosition {
 					++treeTypeCounter;
 					attributeBits += this->pineAttributes.getEstimatedBits() + constexprLog2(3.); // nextInt(3) == 0
 				}
-				break;
 				if (this->possibleTreeTypes.contains(TreeType::Spruce)) {
 					++treeTypeCounter;
 					attributeBits += this->spruceAttributes.getEstimatedBits() + constexprLog2(3./2.); // nextInt(3) != 0
@@ -710,12 +681,7 @@ struct TreeChunkPosition {
 			case TreeType::Spruce:
 				SpruceAttributes::skip(random, isValidIngamePosition, version);
 				break;
-			default:
-				#if CUDA_IS_PRESENT
-					return;
-				#else
-					throw std::invalid_argument("Unsupported tree type provided.");
-				#endif
+			default: THROW_EXCEPTION(/*None*/, "ERROR: Unsupported tree type provided.\n")
 		}
 	}
 };
@@ -778,47 +744,22 @@ struct TreeChunk {
 		{}
 
 	__device__ constexpr TreeChunkPosition &createNewTree(const int32_t x, const int32_t z, const TreeType treeType) {
-		if (!biomeContainsTreeType(this->biome, treeType, this->version)) {
-			// Invalid tree type for the given biome
-			#if CUDA_IS_PRESENT
-				return this->treePositions[sizeof(this->treePositions)/sizeof(*this->treePositions) - 1];
-			#else
-				throw std::invalid_argument("The specified tree type cannot generate under the TreeChunk's set biome and version.");
-			#endif
-		}
+		if (!biomeContainsTreeType(this->biome, treeType, this->version)) THROW_EXCEPTION(this->treePositions[sizeof(this->treePositions)/sizeof(*this->treePositions) - 1], "ERROR: The specified tree type cannot generate under the TreeChunk's set biome and version.\n") // Invalid tree type for the given biome
 
 		uint32_t populationChunkX = getPopulationChunkCoordinate(x, version);
 		uint32_t populationChunkZ = getPopulationChunkCoordinate(z, version);
 		if (!this->numberOfTreePositions) {
 			this->populationChunkX = populationChunkX;
 			this->populationChunkZ = populationChunkZ;
-		} else if (populationChunkX != this->populationChunkX || populationChunkZ != this->populationChunkZ) {
-			#if CUDA_IS_PRESENT
-				return this->treePositions[sizeof(this->treePositions)/sizeof(*this->treePositions) - 1];
-			#else
-				throw std::invalid_argument("New tree does not fall within the specified tree chunk.");
-			#endif
-		}
+		} else if (populationChunkX != this->populationChunkX || populationChunkZ != this->populationChunkZ) THROW_EXCEPTION(this->treePositions[sizeof(this->treePositions)/sizeof(*this->treePositions) - 1], "ERROR: The new tree does not fall within the specified tree trunk.\n")
 		uint32_t populationChunkXOffset = getOffsetWithinPopulationChunk(x, version);
 		uint32_t populationChunkZOffset = getOffsetWithinPopulationChunk(z, version);
 
 		for (uint32_t i = 0; i < this->numberOfTreePositions; i++) {
 			TreeChunkPosition &tree = this->treePositions[i];
 			if (tree.populationChunkXOffset == populationChunkXOffset && tree.populationChunkZOffset == populationChunkZOffset) {
-				if (treeType == TreeType::Unknown) {
-					#if CUDA_IS_PRESENT
-						return this->treePositions[sizeof(this->treePositions)/sizeof(*this->treePositions) - 1];
-					#else
-						throw std::invalid_argument("A tree with known type cannot be superseded with a tree of unknown type.");
-					#endif
-				}
-				if (tree.possibleTreeTypes.contains(treeType)) {
-					#if CUDA_IS_PRESENT
-						return this->treePositions[sizeof(this->treePositions)/sizeof(*this->treePositions) - 1];
-					#else
-						throw std::invalid_argument("Encountered duplicate tree with duplicate coordinates, biome, version, and type.");
-					#endif
-				}
+				if (treeType == TreeType::Unknown) THROW_EXCEPTION(this->treePositions[sizeof(this->treePositions)/sizeof(*this->treePositions) - 1], "ERROR: A tree with known type cannot be superseded with a tree of unknown type.\n")
+				if (tree.possibleTreeTypes.contains(treeType)) THROW_EXCEPTION(this->treePositions[sizeof(this->treePositions)/sizeof(*this->treePositions) - 1], "ERROR: Encountered a duplicate tree with duplicate coordinates, biome, version, and type.\n")
 				tree.possibleTreeTypes.add(treeType);
 				return tree;
 			}
@@ -852,12 +793,7 @@ struct TreeChunk {
 			case TreeType::Unknown:
 				this->createNewTree(treeData.coordinate.x, treeData.coordinate.z, TreeType::Unknown);
 				break;
-			default:
-				#if CUDA_IS_PRESENT
-					return;
-				#else
-					throw std::invalid_argument("Unsupported tree type provided.");
-				#endif
+			default: THROW_EXCEPTION(/*None*/, "ERROR: Unsupported tree type provided.\n")
 		}
 	}
 

@@ -3,6 +3,13 @@
 
 #include "../Allowed Values for Settings.cuh"
 
+// Confirmed to work:
+// 1.14.4 forest, oak/birch (TEST_DATA_7)
+// 1.16.1 forest, oak/birch (TEST_DATA_1)
+
+// Confirmed not to work (currently):
+// 1.6.4 forest, oak/birch/large oak (TEST_DATA_2)
+
 // Worldseed: 3377920886278524622
 // Structure seed: 221165750652622
 // Treechunk seed: ??
@@ -307,7 +314,7 @@ __device__ constexpr InputData TEST_DATA_3[] = {
 };
 
 
-// Seed: ??
+// Worldseed: ??
 // Structure seed: ??
 // Treechunk seed: ??
 __device__ constexpr InputData TEST_DATA_4[] = {
@@ -363,7 +370,7 @@ __device__ constexpr InputData TEST_DATA_4[] = {
 };
 
 
-// 1.7, seed: ??
+// 1.7, worldseed: ??
 // Structure seed: ??
 // Treechunk seed: ??
 // From Rehorted
@@ -520,7 +527,6 @@ __device__ constexpr InputData TEST_DATA_5[] = {
 };
 
 
-// TODO: Convert from Andrew's input_data.cuh
 // Seed: 123
 // Structure seed: 123
 // Treechunk seed: 13108863711061
@@ -728,6 +734,7 @@ __device__ constexpr InputData TEST_DATA_7[] = {
 };
 
 
+// TODO: Convert from Andrew's input_data.cuh
 // Seed: 123
 // Structure seed: 123
 // Treechunk seed: 241689593949439

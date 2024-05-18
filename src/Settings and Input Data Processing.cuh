@@ -4,6 +4,8 @@
 #include "Experimental Settings.cuh"
 #include "Trees Logic.cuh"
 
+__managed__ uint32_t currentPopulationChunkDataIndex = 0;
+
 __host__ __device__ constexpr const char *getPlural(const int32_t val) noexcept {
 	return val == 1 ? "" : "s";
 }
@@ -14,12 +16,7 @@ __host__ __device__ constexpr const char *toString(const Biome biome) {
 		case Biome::Forest: return "Forest";
 		case Biome::Birch_Forest: return "Birch Forest";
 		case Biome::Taiga: return "Taiga";
-		default:
-			#if CUDA_IS_PRESENT
-				return "";
-			#else
-				throw std::invalid_argument("Unsupported biome provided.");
-			#endif
+		default: THROW_EXCEPTION("", "ERROR: Unsupported biome provided.\n")
 	}
 }
 
@@ -32,12 +29,7 @@ __host__ __device__ constexpr const char *toString(const Version version) {
 		case Version::v1_14_4: return "1.14.4";
 		case Version::v1_16_1: return "1.16.1";
 		case Version::v1_16_4: return "1.16.4";
-		default:
-			#if CUDA_IS_PRESENT
-				return "";
-			#else
-				throw std::invalid_argument("Unsupported version provided.");
-			#endif
+		default: THROW_EXCEPTION("", "ERROR: Unsupported version provided.\n")
 	}
 }
 
@@ -56,12 +48,7 @@ __host__ __device__ constexpr const char *toString(const LeafPosition leafPositi
 		case LeafPosition::SouthwestUpperLeaf:  return  "Upper Southwest leaf";
 		case LeafPosition::NortheastUpperLeaf:  return  "Upper Northeast leaf";
 		case LeafPosition::SoutheastUpperLeaf:  return  "Upper Southeast leaf";
-		default:
-			#if CUDA_IS_PRESENT
-				return "";
-			#else
-				throw std::invalid_argument("Unsupported leaf position provided.");
-			#endif
+		default: THROW_EXCEPTION("", "ERROR: Unsupported leaf position provided.\n")
 	}
 }
 
@@ -71,12 +58,7 @@ __host__ __device__ constexpr const char *toString(const LeafState leafState) {
 		case LeafState::LeafWasNotPlaced: return "Leaf was not placed";
 		case LeafState::LeafWasPlaced: return "Leaf was placed";
 		case LeafState::Unknown: return "Unknown";
-		default:
-			#if CUDA_IS_PRESENT
-				return "";
-			#else
-				throw std::invalid_argument("Unsupported leaf state provided.");
-			#endif
+		default: THROW_EXCEPTION("", "ERROR: Unsupported leaf state provided.\n")
 	}
 }
 
@@ -89,17 +71,64 @@ __host__ __device__ constexpr const char *toString(const TreeType treetype) {
 		case TreeType::Pine: return "Pine";
 		case TreeType::Spruce: return "Spruce";
 		case TreeType::Unknown: return "Unknown";
-		default:
-			#if CUDA_IS_PRESENT
-				return "";
-			#else
-				throw std::invalid_argument("Unsupported tree type provided.");
-			#endif
+		default: THROW_EXCEPTION("", "ERROR: Unsupported tree type provided.\n")
 	}
 }
 
 
-__host__ __device__ constexpr const char *getNotesAboutSeed(const uint64_t seed, const bool largeBiomesFlag) {
+__host__ __device__ constexpr double getBiomeRarity(const Biome biome, const Version version) {
+	switch (version) {
+		case Version::v1_6_4:
+			switch (biome) {
+				case Biome::Birch_Forest: return 0.;
+				case Biome::Forest: return 0.0882374;
+				// case Biome::Plains: return 0.0759574.;
+				// case Biome::Snowy_Taiga: return ....;
+				// case Biome::Swamp: return 0.0430886.;
+				case Biome::Taiga: return 0.0842522;
+				default: THROW_EXCEPTION(0., "ERROR: Unsupported biome provided.\n")
+			}
+		case Version::v1_8_9:
+			switch (biome) {
+				case Biome::Birch_Forest: return 1.;
+				case Biome::Forest: return 1.;
+				case Biome::Taiga: return 1.;
+				default: THROW_EXCEPTION(0., "ERROR: Unsupported biome provided.\n")
+			}
+		case Version::v1_12_2:
+			switch (biome) {
+				case Biome::Birch_Forest: return 1.;
+				case Biome::Forest: return 1.;
+				case Biome::Taiga: return 1.;
+				default: THROW_EXCEPTION(0., "ERROR: Unsupported biome provided.\n")
+			}
+		case Version::v1_14_4:
+			switch (biome) {
+				case Biome::Birch_Forest: return 1.;
+				case Biome::Forest: return 1.;
+				case Biome::Taiga: return 1.;
+				default: THROW_EXCEPTION(0., "ERROR: Unsupported biome provided.\n")
+			}
+		case Version::v1_16_1:
+			switch (biome) {
+				case Biome::Birch_Forest: return 1.;
+				case Biome::Forest: return 1.;
+				case Biome::Taiga: return 1.;
+				default: THROW_EXCEPTION(0., "ERROR: Unsupported biome provided.\n")
+			}
+		case Version::v1_16_4:
+			switch (biome) {
+				case Biome::Birch_Forest: return 1.;
+				case Biome::Forest: return 1.;
+				case Biome::Taiga: return 1.;
+				default: THROW_EXCEPTION(0., "ERROR: Unsupported biome provided.\n")
+			}
+		default: THROW_EXCEPTION(0., "ERROR: Unsupported version provided.\n")
+
+	}
+}
+
+__host__ __device__ constexpr const char *getNotesAboutSeed(const uint64_t seed, const bool largeBiomesFlag) noexcept {
 	bool textSeedFlag = (INT32_MIN <= static_cast<int64_t>(seed) && static_cast<int64_t>(seed) <= INT32_MAX);
 	bool randomSeedFlag = Random::isFromNextLong(seed);
 	// This is constexpr, so I can't use std::string or std::string::c_str().
@@ -187,9 +216,33 @@ struct SetOfTreeChunks {
 		return bits - 8.*static_cast<double>(RELATIVE_COORDINATES_MODE); // In Relative Coordinates mode, all trees center around a single position, so if one knows any one position they have all of the other positions immediately. Therefore only 8 bits of information is actually lost.
 	}
 
+	__host__ int32_t getCurrentMaxCalls() const noexcept {
+		return this->treeChunks[currentPopulationChunkDataIndex].maxCalls;
+	}
+
+	__device__ constexpr int32_t getHighestMaxCalls() const noexcept {
+		int32_t maxCalls = 0;
+		for (uint32_t i = 0; i < this->numberOfTreeChunks; ++i) {
+			if (maxCalls < this->treeChunks[i].maxCalls) maxCalls = this->treeChunks[i].maxCalls;
+		}
+		return maxCalls;
+	}
+
+	__host__ int32_t getCurrentMaxTreeCount() const noexcept {
+		return this->treeChunks[currentPopulationChunkDataIndex].maxTreeCount;
+	}
+
+	__device__ constexpr int32_t getHighestMaxTreeCount() const noexcept {
+		int32_t maxTreeCount = 0;
+		for (uint32_t i = 0; i < this->numberOfTreeChunks; ++i) {
+			if (maxTreeCount < this->treeChunks[i].maxTreeCount) maxTreeCount = this->treeChunks[i].maxTreeCount;
+		}
+		return maxTreeCount;
+	}
+
 	void printFindings() const noexcept {
 		if (SILENT_MODE) return;
-		bool hasPineOrTaigaTrees = false;
+		bool hasPineOrSpruceTrees = false;
 		std::fprintf(stderr, "Found %" PRIu32 " population chunk%s. (%.2f bits)\n", this->numberOfTreeChunks, getPlural(this->numberOfTreeChunks), this->getEstimatedBits());
 		for (uint32_t i = 0; i < this->numberOfTreeChunks; ++i) {
 			// Individual population chunk data
@@ -221,7 +274,7 @@ struct SetOfTreeChunks {
 					std::fprintf(stderr, "\t\t\tLeaf states: %" PRIu32 " corner leaves placed, %" PRIu32 " total corner leaf states known\n", getNumberOfOnesIn(this->treeChunks[i].treePositions[j].birchAttributes.leafStates.mask & 0x0000ffff), getNumberOfOnesIn(this->treeChunks[i].treePositions[j].birchAttributes.leafStates.mask & 0xffff0000));
 				}
 				if (this->treeChunks[i].treePositions[j].possibleTreeTypes.contains(TreeType::Pine)) {
-					hasPineOrTaigaTrees = true;
+					hasPineOrSpruceTrees = true;
 					// Individual Pine data
 					std::fprintf(stderr, "\t\tPine (%.2f bits)\n", this->treeChunks[i].treePositions[j].pineAttributes.getEstimatedBits());
 					std::fprintf(stderr, "\t\t\tTrunk height range: [%" PRId32 ", %" PRId32 "]\n", this->treeChunks[i].treePositions[j].pineAttributes.trunkHeight.lowerBound, this->treeChunks[i].treePositions[j].pineAttributes.trunkHeight.upperBound);
@@ -229,7 +282,7 @@ struct SetOfTreeChunks {
 					std::fprintf(stderr, "\t\t\tLeaves' widest radius range: [%" PRId32 ", %" PRId32 "]\n", this->treeChunks[i].treePositions[j].pineAttributes.leavesWidestRadius.lowerBound, this->treeChunks[i].treePositions[j].pineAttributes.leavesWidestRadius.upperBound);
 				}
 				if (this->treeChunks[i].treePositions[j].possibleTreeTypes.contains(TreeType::Spruce)) {
-					hasPineOrTaigaTrees = true;
+					hasPineOrSpruceTrees = true;
 					// Individual Spruce data
 					std::fprintf(stderr, "\t\tSpruce (%.2f bits)\n", this->treeChunks[i].treePositions[j].spruceAttributes.getEstimatedBits());
 					std::fprintf(stderr, "\t\t\tTrunk height range: [%" PRId32 ", %" PRId32 "]\n", this->treeChunks[i].treePositions[j].spruceAttributes.trunkHeight.lowerBound, this->treeChunks[i].treePositions[j].spruceAttributes.trunkHeight.upperBound);
@@ -241,19 +294,19 @@ struct SetOfTreeChunks {
 			}
 		}
 		std::fprintf(stderr, "\n\n");
-		if (hasPineOrTaigaTrees) std::fprintf(stderr, "Note that some attributes for Pine and Taiga trees are rescaled/modified when being converted into the internal format above, so their values may be different.\n\n");
+		if (hasPineOrSpruceTrees) std::fprintf(stderr, "Note that some attributes for Pine and Spruce trees are rescaled/modified when being converted into the internal format above, so their values may be different.\n\n");
 	}
 };
 
 __device__ constexpr SetOfTreeChunks POPULATION_CHUNKS_DATA(INPUT_DATA, sizeof(INPUT_DATA)/sizeof(*INPUT_DATA));
-// TODO: Finish getting rid of these
-__device__ constexpr TreeChunk FIRST_POPULATION_CHUNK = POPULATION_CHUNKS_DATA.treeChunks[0];
-constexpr int32_t MAX_CALLS = biomeMaxRandomCalls(FIRST_POPULATION_CHUNK.biome, FIRST_POPULATION_CHUNK.version);
-constexpr int32_t MAX_TREE_COUNT = biomeMaxTreeCount(FIRST_POPULATION_CHUNK.biome, FIRST_POPULATION_CHUNK.version);
 constexpr bool COLLAPSE_NEARBY_SEEDS_FLAG = POPULATION_CHUNKS_DATA.treeChunks[0].version <= Version::v1_12_2;
 struct Stage2Results {
 	uint64_t structureSeedIndex, treechunkSeed;
 };
+
+
+// constexpr auto e = POPULATION_CHUNKS_DATA.treeChunks[0].populationChunkX;
+// constexpr auto e = getMinBlockCoordinate(POPULATION_CHUNKS_DATA.treeChunks[0].populationChunkX, POPULATION_CHUNKS_DATA.treeChunks[0].version);
 
 // TODO: Replace CUDA_IS_PRESENT preprocessor directives with ACTUAL_DEVICE
 constexpr Device ACTUAL_DEVICE = CUDA_IS_PRESENT ? DEVICE : static_cast<Device>(ExperimenalDevice::CPU);
@@ -271,11 +324,10 @@ constexpr uint64_t ACTUAL_WORKERS_PER_BLOCK = constexprMin(WORKERS_PER_BLOCK, NU
 constexpr uint64_t TOTAL_NUMBER_OF_STATES_TO_CHECK = UINT64_C(1) << (44 + 4*static_cast<int32_t>(RELATIVE_COORDINATES_MODE));
 /* One one hand, the first filter finds all internal states that can generate the tree with the most number of bits of information.
    Therefore for a tree with k bits of information, we can expect there to be around 2^(48 - k) results, or 2^(48 - k)/ACTUAL_NUMBER_OF_PARTIAL_RUNS results per run.
-   On the other hand, during each iteration we're only actually analyzing at most NUMBER_OF_WORKERS*(MAX_CALLS + 1)*(1 << MAX_TREE_COUNT) entries.
+   On the other hand, during each iteration we're only actually analyzing at most NUMBER_OF_WORKERS*(getHighestMaxCalls() + 1)*(1 << getHighestMaxTreeCount()) entries.
    Therefore the expected number of results we'll need space for is simply the minimum of those two expression, which is then doubled to provide some leeway just in case.
-   (Note: this does not currently take into account the fact that 65536 worldseeds correspond to each ultimate structure seed, since then we'd need to make this 65536x larger
-   and I suspect the structure seeds will be filtered enough to render that unnecessary.)*/
-constexpr uint64_t RECOMMENDED_RESULTS_PER_RUN = 2*constexprMin((UINT64_C(1) << (48 - static_cast<uint32_t>(POPULATION_CHUNKS_DATA.treeChunks[0].treePositions[0].getEstimatedBits(POPULATION_CHUNKS_DATA.treeChunks[0].biome, POPULATION_CHUNKS_DATA.treeChunks[0].version) - 0.5)))/ACTUAL_NUMBER_OF_PARTIAL_RUNS, NUMBER_OF_WORKERS*(MAX_CALLS + 1)*(1 << MAX_TREE_COUNT));
+   (Note: this does not currently take into account the fact that 65536 worldseeds correspond to each ultimate structure seed, since then we'd need to make this 65536x larger and I suspect the structure seeds will be filtered enough to render that unnecessary.)*/
+constexpr uint64_t RECOMMENDED_RESULTS_PER_RUN = 2*constexprMin((UINT64_C(1) << (48 - static_cast<uint32_t>(POPULATION_CHUNKS_DATA.treeChunks[0].treePositions[0].getEstimatedBits(POPULATION_CHUNKS_DATA.treeChunks[0].biome, POPULATION_CHUNKS_DATA.treeChunks[0].version) - 0.5)))/ACTUAL_NUMBER_OF_PARTIAL_RUNS, NUMBER_OF_WORKERS*(POPULATION_CHUNKS_DATA.getHighestMaxCalls() + 1)*(UINT64_C(1) << POPULATION_CHUNKS_DATA.getHighestMaxTreeCount()));
 // NVCC error C2148 places a hard limit of 0x7fffffff bytes per array, while the largest-information array we'll be using is Stage2Results.
 constexpr uint64_t MOST_POSSIBLE_RESULTS_PER_RUN = constexprMin(static_cast<uint64_t>(constexprCeil(static_cast<double>(TOTAL_NUMBER_OF_STATES_TO_CHECK)/static_cast<double>(ACTUAL_NUMBER_OF_PARTIAL_RUNS))), 0x7fffffff/sizeof(Stage2Results));
 constexpr uint64_t ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN = constexprMin(MAX_NUMBER_OF_RESULTS_PER_RUN ? MAX_NUMBER_OF_RESULTS_PER_RUN : RECOMMENDED_RESULTS_PER_RUN, MOST_POSSIBLE_RESULTS_PER_RUN);
@@ -286,7 +338,6 @@ struct ThreadData {
 	uint64_t index, start;
 };
 #endif
-__device__ uint64_t filterInputs[ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN];
 __managed__ uint64_t filterResults[ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN]; // To prevent new results from accidentally erasing the old inputs mid-filter
 
 

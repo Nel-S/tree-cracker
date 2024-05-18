@@ -57,13 +57,9 @@ namespace {
 		if (numberOfKnownBitsInStructureSeed == 48) {
 			if (get_1_12_populationSeed(structureSeed, x, z) == populationSeed) {
 				uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&totalStructureSeedsPerRun), 1);
-				if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) {
-					#if CUDA_IS_PRESENT
-						return;
-					#else
-						return NULL;
-					#endif
-				}
+				if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) return;
+				// if (POPULATION_CHUNKS_DATA.numberOfTreeChunks == 1) filterResults[resultIndex] = structureSeed;
+				// else stage2filterResults[resultIndex] = {resultIndex, populationSeed};
 				filterResults[resultIndex] = structureSeed;
 			}
 			return;
@@ -127,13 +123,9 @@ namespace {
 		if (numberOfKnownBitsInStructureSeed == 48) {
 			if (get_1_13_populationSeed(structureSeed, x, z) == populationSeed) {
 				uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&totalStructureSeedsPerRun), 1);
-				if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) {
-					#if CUDA_IS_PRESENT
-						return;
-					#else
-						return NULL;
-					#endif
-				}
+				if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) return;
+				// if (POPULATION_CHUNKS_DATA.numberOfTreeChunks == 1) filterResults[resultIndex] = structureSeed;
+				// else stage2filterResults[resultIndex] = {resultIndex, populationSeed};
 				filterResults[resultIndex] = structureSeed;
 			}
 			return;
@@ -161,13 +153,10 @@ namespace {
 __device__ void reverse_1_12_populationSeed(const uint64_t populationSeed, const uint64_t x, const uint64_t z) {
 	if (!x && !z) {
 		uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&totalStructureSeedsPerRun), 1);
-		if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) {
-			#if CUDA_IS_PRESENT
-				return;
-			#else
-				return NULL;
-			#endif
-		}
+		if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) return;
+		// The structure seed is the population seed in this case
+		// if (POPULATION_CHUNKS_DATA.numberOfTreeChunks == 1) filterResults[resultIndex] = populationSeed;
+		// else stage2filterResults[resultIndex] = {resultIndex, populationSeed};
 		filterResults[resultIndex] = populationSeed;
 		return;
 	}
@@ -179,7 +168,6 @@ __device__ void reverse_1_12_populationSeed(const uint64_t populationSeed, const
 		return;
 	}
 	uint64_t constant_mult_mod_inv = inverseModulo(constant_mult >> constant_mult_zeros);
-	// int32_t bits_per_iter = 16 - constant_mult_zeros;
 
 	int32_t x_zeros = getNumberOfTrailingZeroes(x);
 	int32_t z_zeros = getNumberOfTrailingZeroes(z);
@@ -233,13 +221,9 @@ __device__ void reverse_1_12_populationSeed(const uint64_t populationSeed, const
 				for (uint64_t structureSeed = mask(xoredStructureSeed ^ M1, xoredStructureSeedBits); structureSeed < twoToThePowerOf(48); structureSeed += twoToThePowerOf(xoredStructureSeedBits)) {
 					if (get_1_12_populationSeed(structureSeed, x, z) == populationSeed) {
 						uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&totalStructureSeedsPerRun), 1);
-						if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) {
-							#if CUDA_IS_PRESENT
-								return;
-							#else
-								return NULL;
-							#endif
-						}
+						if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) return;
+						// if (POPULATION_CHUNKS_DATA.numberOfTreeChunks == 1) filterResults[resultIndex] = structureSeed;
+						// else stage2filterResults[resultIndex] = {resultIndex, populationSeed};
 						filterResults[resultIndex] = structureSeed;
 					}
 				}
@@ -251,13 +235,10 @@ __device__ void reverse_1_12_populationSeed(const uint64_t populationSeed, const
 __device__ void reverse_1_13_populationSeed(const uint64_t populationSeed, const uint64_t x, const uint64_t z) {
 	if (!x && !z) {
 		uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&totalStructureSeedsPerRun), 1);
-		if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) {
-			#if CUDA_IS_PRESENT
-				return;
-			#else
-				return NULL;
-			#endif
-		}
+		if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) return;
+		// The structure seed is the population seed in this case
+		// if (POPULATION_CHUNKS_DATA.numberOfTreeChunks == 1) filterResults[resultIndex] = populationSeed;
+		// else stage2filterResults[resultIndex] = {resultIndex, populationSeed};
 		filterResults[resultIndex] = populationSeed;
 		return;
 	}
@@ -269,7 +250,6 @@ __device__ void reverse_1_13_populationSeed(const uint64_t populationSeed, const
 		return;
 	}
 	uint64_t constant_mult_mod_inv = inverseModulo(constant_mult >> constant_mult_zeros);
-	// int32_t bits_per_iter = 16 - constant_mult_zeros;
 
 	int32_t x_zeros = getNumberOfTrailingZeroes(x);
 	int32_t z_zeros = getNumberOfTrailingZeroes(z);
@@ -301,15 +281,10 @@ __device__ void reverse_1_13_populationSeed(const uint64_t populationSeed, const
 				uint64_t result = result_const ^ xoredStructureSeed;
 				uint64_t mult_result = (result - addend) >> (xoredStructureSeedBits - 16);
 				if (bits_this_iter <= 0) {
-					if ((mult_result & getBitmask(bits_left)) != 0) {
-						invalid = true;
-						break;
-					}
-
+					if (mult_result & getBitmask(bits_left)) invalid = true;
 					break;
 				}
-
-				if ((mult_result & getBitmask(constant_mult_zeros)) != 0) {
+				if (mult_result & getBitmask(constant_mult_zeros)) {
 					invalid = true;
 					break;
 				}
@@ -323,13 +298,9 @@ __device__ void reverse_1_13_populationSeed(const uint64_t populationSeed, const
 				for (uint64_t structureSeed = mask(xoredStructureSeed ^ M1, xoredStructureSeedBits); structureSeed < twoToThePowerOf(48); structureSeed += twoToThePowerOf(xoredStructureSeedBits)) {
 					if (get_1_13_populationSeed(structureSeed, x, z) == populationSeed) {
 						uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&totalStructureSeedsPerRun), 1);
-						if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) {
-							#if CUDA_IS_PRESENT
-								return;
-							#else
-								return NULL;
-							#endif
-						}
+						if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) return;
+						// if (POPULATION_CHUNKS_DATA.numberOfTreeChunks == 1) filterResults[resultIndex] = structureSeed;
+						// else stage2filterResults[resultIndex] = {resultIndex, populationSeed};
 						filterResults[resultIndex] = structureSeed;
 					}
 				}

@@ -4,6 +4,7 @@
 #include <cinttypes>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <cuda.h>
 #include <stdexcept>
 
@@ -67,15 +68,16 @@
 		return cudaSuccess;
 	}
 
-	#include <cstring>
 	#define cudaMemsetAsync memset
 	enum cudaMemcpyKind {cudaMemcpyDefault};
 	cudaError_t cudaMemcpy(void *dst, const void *src, size_t count, cudaMemcpyKind kind) {
 		memcpy(dst, src, count);
 		return cudaSuccess;
 	}
+	#define THROW_EXCEPTION(DEFAULT_VALUE_IF_CUDA, ERROR_MESSAGE_IF_NOT_CUDA) throw std::invalid_argument(ERROR_MESSAGE_IF_NOT_CUDA);
 #else
 	#define CUDA_IS_PRESENT true
+	#define THROW_EXCEPTION(DEFAULT_VALUE_IF_CUDA, ERROR_MESSAGE_IF_NOT_CUDA) return DEFAULT_VALUE_IF_CUDA;
 #endif
 
 #define ABORT(...) { \

@@ -13,7 +13,7 @@ At the time of writing, this program only supports
 - Forest, Birch Forest, or Taiga biomes.
 If you would like to add support for another version, tree type, or biome, or otherwise improve this code or report a bug with it, please feel free to open a pull request.
 
-The program also uses CUDA, which requires one's device to have an NVIDIA CUDA-capable GPU installed. NVIDIA's CUDA also [does not support MacOS versions OS X 10.14 or beyond](https://developer.nvidia.com/nvidia-cuda-toolkit-developer-tools-mac-hosts). If either of those requirements disqualify your computer, you can instead run the program on a virtual GPU for free (subject to certain runtime limits) through [Google Colab](https://colab.research.google.com).
+The program also uses CUDA, which requires one's device to have an NVIDIA CUDA-capable GPU installed. NVIDIA's CUDA also [does not support MacOS versions OS X 10.14 or beyond](https://developer.nvidia.com/nvidia-cuda-toolkit-developer-tools-mac-hosts). If either of those requirements disqualify your computer, you can instead run the program on a virtual GPU for free (at the time of writing this, and subject to certain runtime limits) through [Google Colab](https://colab.research.google.com).
 
 ## Installation, Setup, and Usage
 1. Download the repository, either as a ZIP file from GitHub or by cloning it through Git.
@@ -23,13 +23,13 @@ The program also uses CUDA, which requires one's device to have an NVIDIA CUDA-c
     1. Visit [the website](https://colab.research.google.com), sign in with a Google account, and create a new notebook.
     2. Open the Files sidebar to the left and upload the program's files, making sure to keep the files' structure the way it originally was (the underlying code files are inside a folder named src, etc.). Don't forget to upload the modified Settings file instead of the original.
     3. Under the Runtime tab, select "Change runtime type" and select T4 GPU as the hardware accelerator.
-4. Whether on Google Colab or your own computer, open a terminal and make sure [nvcc](https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html), the CUDA compiler, is installed:
+5. Whether on Google Colab or your own computer, open a terminal and verify [nvcc](https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html), the CUDA compiler, is installed:
 ```bash
 (Linux/Windows/MacOS)  nvcc --version
 (Google Colab)        !nvcc --version
 ```
 If the output is an error and not the compiler's information, you will need to install the CUDA Toolkit which contains `nvcc`. (The following are installation guides for [Linux](https://docs.nvidia.com/cuda/cuda-installation-guide-linux), [Windows](https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows), and [MacOS X 10.13 or before](https://docs.nvidia.com/cuda/archive/10.1/cuda-installation-guide-mac-os-x/).)
-5. Navigate in the terminal to the folder where the program's files are contained:
+6. Navigate in the terminal to the folder where the program's files are contained:
 ```bash
 (Linux/Windows/MacOS)  cd "[Path to the folder]"
 (Google Colab)        !cd "[Path to the folder]"
@@ -41,8 +41,8 @@ Then use `nvcc` to compile the program:
 (Google Colab) !nvcc main.cu -o "main" -O3
 ```
 Depending on your input data, the compilation may take almost a full minute or even longer.
-If you receive an error akin to `Stack size for entry function '_Z11biomeFilterv' cannot be statically determined`, do not worry. 
-6. Run the compiled program:
+The compilation may print a warning akin to `Stack size for entry function '_Z11biomeFilterv' cannot be statically determined`: do not worry if this happens. (Cubiomes, which this program uses a port of to filter biomes, generates internal "layers" for Beta 1.8&ndash;1.17 recursively, which means the compiler cannot statically calculate in advance exactly how many layers there are.)
+7. Run the compiled program:
 ```bash
 (Linux)         .\main
 (Windows)       .\main.exe
@@ -56,7 +56,7 @@ I would like to give a very large Thank You to
 - Andrew, for creating the [original version of the TreeCracker](https://github.com/Gaider10/TreeCracker) and a [population chunk reverser](https://github.com/Gaider10/PopulationCrr).
 - Cortex and TatertotGr8, for their tree crackers that predate even Andrew's ([Cortex's](https://github.com/MCRcortex/TreeCracker), [TatertotGr8's](https://github.com/TatertotGr8/Treecracker))
 - Epic10l2, for his [comprehensive guide to Andrew's TreeCracker](https://docs.google.com/document/d/1csrcO2F4qQ2ahYgcicWmJtnfeU99q65p) that enabled me to learn how to use the program.
-- Cubitect, for his [Cubiomes library](https://github.com/Cubitect/cubiomes) that this program uses to filter biomes.
+- Cubitect, for his [Cubiomes library](https://github.com/Cubitect/cubiomes) that this program uses a port of to filter biomes.
 - Panda4994, for [his algorithm]((https://github.com/Panda4994/panda4994.github.io/blob/48526d35d3d38750102b9f360dff45a4bdbc50bd/seedinfo/js/Random.js#L16)) to determine if a state is derivable from a nextLong call.
 
 This repository is offered under the MIT License. However, if you do use or reference this respoitory, I would greatly appreciate a citation.

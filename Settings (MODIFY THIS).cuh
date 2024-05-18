@@ -8,12 +8,11 @@
 
 // The number of workers (processes, threads, etc.) you wish the program to use.
 constexpr uint64_t NUMBER_OF_WORKERS = 4294967296;
-// constexpr uint64_t NUMBER_OF_WORKERS = 4;
 // If you are using CUDA, the number of workers (threads) you wish to use per GPU block.
 #if CUDA_IS_PRESENT
 constexpr uint64_t WORKERS_PER_BLOCK = 256;
 #endif
-/* The filepath you wish to direct the output to. WARNING: If that file already exists, the old file will be overwritten.
+/* The filepath you wish to direct the output to. If that file already exists, a file with a different name will be created instead.
    If set to NULL, the output will only be printed to the screen.*/
 constexpr const char *OUTPUT_FILEPATH = "output.txt";
 // Whether you wish the program to print its runtime. 
@@ -26,13 +25,14 @@ constexpr bool SILENT_MODE = false;
 constexpr uint64_t NUMBER_OF_PARTIAL_RUNS = 8;
 constexpr uint64_t PARTIAL_RUN_TO_BEGIN_FROM = 1; // This counts as 1, 2, ..., NUMBER_OF_PARTIAL_RUNS.
 /* The maximum number of results to allow per run.
-   If set to 0, the program will try to calculate a reasonable limit automatically, based on your input data.*/
+   If set to AUTO, the program will try to calculate a reasonable limit automatically, based on your input data.*/
+// constexpr uint64_t MAX_NUMBER_OF_RESULTS_PER_RUN = AUTO;
 constexpr uint64_t MAX_NUMBER_OF_RESULTS_PER_RUN = AUTO;
 
 
 /* This list holds each tree one has data for, and their attributes.
    Add to, delete from, or otherwise modify this example to suit your own input data.*/
-#define INPUT_DATA TEST_DATA_7
+#define INPUT_DATA TEST_DATA_2
 // __device__ constexpr InputData INPUT_DATA[] = {
 // 	/* ----- START OF AN EXAMPLE OAK/BIRCH TREE ----- */
 // 	{

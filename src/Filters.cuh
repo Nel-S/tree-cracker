@@ -5,8 +5,9 @@
 #include "Biome Logic.cuh"
 // #include <cstdio>
 
-__managed__ uint32_t currentPopulationChunkDataIndex = 0;
-
+// TODO: Change to storageA and storageB which results flip-flop between, removing the need for transferResults
+// (Though that would cause adding/removing any more filters to become a major headache...)
+__device__ uint64_t filterInputs[ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN];
 __device__ uint32_t filter3_masks[ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN/32];
 
 __managed__ uint64_t filter1_numberOfResultsPerRun = 0;
@@ -19,9 +20,30 @@ __device__ Stage2Results stage2filterResults[ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RU
 __managed__ uint64_t filter5_numberOfResultsPerRun = 0;
 __managed__ uint64_t filter6_numberOfResultsPerRun = 0;
 __managed__ uint64_t filter7_numberOfResultsPerRun = 0;
-__managed__ uint64_t filter8_numberOfResultsPerRun = 0;
 __device__ uint32_t filter5_masks[(ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN + 31) / 32];
 __device__ uint32_t filter8_masks[(ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN + 31) / 32];
+
+
+
+#if CUDA_IS_PRESENT
+__global__ __launch_bounds__(ACTUAL_WORKERS_PER_BLOCK) void transferResults() {
+	uint64_t index = static_cast<uint64_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+#else
+void *transferResults(void *start) {
+	ThreadData *star = static_cast<ThreadData *>(start);
+#endif
+	if (index >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) {
+		#if CUDA_IS_PRESENT
+			return;
+		#else
+			return NULL;
+		#endif
+	}
+	filterInputs[index] = filterResults[index];
+#if (!CUDA_IS_PRESENT)
+	return NULL;
+#endif
+}
 
 /* Filters possible internal Random states for those that could generate the first tree in POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex]. Specifically, successful states
 	- would choose the first tree's x-coordinate (if RELATIVE_COORDINATES_MODE is false);
@@ -75,7 +97,7 @@ void *filter1(void *start) {
 
 /* Filters possible internal Random states for those whose surrounding states, within the maximum possible range of calls, could generate all listed trees' positions and types. Specifically, successful states
 	- pass filter1, and
-	- for each other tree in the chunk, have a state between -MAX_CALLS and MAX_CALLS advancements away from the tested state that could generate the tree's
+	- for each other tree in the chunk, have a state between -.maxCalls and .maxCalls advancements away from the tested state that could generate the tree's
 		- x-coordinate,
 		- z-coordinate, and
 		- type.
@@ -101,9 +123,20 @@ void *filter2(void *dat) {
 	uint64_t seed = filterInputs[index];
 
 	uint32_t found = 0;
-	Random random = Random::withSeed(seed).skip<-MAX_CALLS>();
-	for (int32_t _currentCall = -MAX_CALLS; _currentCall <= MAX_CALLS; ++_currentCall) {
-		if (random.seed == 13108863711061) printf("\t(Encountered correct treechunk seed with seed %" PRIu64 ")\n", seed);
+	Random random = Random::withSeed(seed);
+	int32_t calls = POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex].maxCalls;
+	if (calls & 256) random.skip<-256>();
+	if (calls & 128) random.skip<-128>();
+	if (calls & 64) random.skip<-64>();
+	if (calls & 32) random.skip<-32>();
+	if (calls & 16) random.skip<-16>();
+	if (calls & 8) random.skip<-8>();
+	if (calls & 4) random.skip<-4>();
+	if (calls & 2) random.skip<-2>();
+	if (calls & 1) random.skip<-1>();
+
+	for (int32_t _currentCall = -POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex].maxCalls; _currentCall <= POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex].maxCalls; ++_currentCall) {
+		// if (random.seed == 13108863711061) printf("\t(Encountered correct treechunk seed with seed %" PRIu64 ")\n", seed);
 		#pragma unroll
 		for (uint32_t j = 0; j < POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex].numberOfTreePositions; j++) {
 			Random treeRandom(random);
@@ -112,7 +145,7 @@ void *filter2(void *dat) {
 		random.skip<1>();
 	}
 
-	if (seed == 13108863711061) printf("\t(%" PRIu32 "\n", found);
+	// if (seed == 13108863711061) printf("\t(%" PRIu32 "\n", found);
 	if (found != ((UINT32_C(1) << POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex].numberOfTreePositions) - 1)) {
 		#if CUDA_IS_PRESENT
 			return;
@@ -136,7 +169,7 @@ void *filter2(void *dat) {
 
 /* Filters possible internal Random states for those whose surrounding states, within the maximum possible range of calls, could generate all listed trees' positions, types, and attributes. Specifically, successful states
 	- pass filter2, and
-	- for each tree listed, have a state between -MAX_CALLS and MAX_CALLS advancements away from the tested state that could generate the tree's coordinates, type, and attributes.
+	- for each tree listed, have a state between -.maxCalls and .maxCalls advancements away from the tested state that could generate the tree's coordinates, type, and attributes.
    filter3_numberOfResultsPerRun must be set to 0 beforehand.
    Values are read from filterInputs[] and outputted to filterResults[], with the final count being stored in filter3_numberOfResultsPerRun.*/
 // TODO: Unify with filter7
@@ -158,8 +191,19 @@ void *filter3(void *dat) {
 	uint64_t seed = filterInputs[index];
 
 	uint32_t found = 0;
-	Random random = Random::withSeed(seed).skip<-MAX_CALLS>();
-	for (int32_t i = -MAX_CALLS; i <= MAX_CALLS; i++) {
+	Random random = Random::withSeed(seed);
+	int32_t calls = POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex].maxCalls;
+	if (calls & 256) random.skip<-256>();
+	if (calls & 128) random.skip<-128>();
+	if (calls & 64) random.skip<-64>();
+	if (calls & 32) random.skip<-32>();
+	if (calls & 16) random.skip<-16>();
+	if (calls & 8) random.skip<-8>();
+	if (calls & 4) random.skip<-4>();
+	if (calls & 2) random.skip<-2>();
+	if (calls & 1) random.skip<-1>();
+
+	for (int32_t __currentCall = -POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex].maxCalls; __currentCall <= POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex].maxCalls; ++__currentCall) {
 		#pragma unroll
 		for (uint32_t j = 0; j < POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex].numberOfTreePositions; j++) {
 			const TreeChunkPosition &tree = POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex].treePositions[j];
@@ -198,8 +242,8 @@ void *filter3(void *dat) {
 #if CUDA_IS_PRESENT
 __global__ __launch_bounds__(ACTUAL_WORKERS_PER_BLOCK) void treechunkFilter() {
 	uint32_t index = blockIdx.x * blockDim.x + threadIdx.x;
-	uint32_t calls = index % (MAX_CALLS + 1);
-	index /= (MAX_CALLS + 1);
+	uint32_t calls = index % (POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex].maxCalls + 1);
+	index /= (POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex].maxCalls + 1);
 
 	uint32_t validIngamePositionsMask = index % (UINT64_C(1) << POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex].maxTreeCount);
 	if (getNumberOfOnesIn(validIngamePositionsMask) < POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex].numberOfTreePositions) return;
@@ -213,7 +257,7 @@ void *treechunkFilter(void *dat) {
 	uint64_t originalSeed = filterInputs[index];
 	for (uint32_t validIngamePositionsMask = 0; validIngamePositionsMask < UINT64_C(1) << POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex].maxTreeCount; ++validIngamePositionsMask) {
 		if (getNumberOfOnesIn(validIngamePositionsMask) < POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex].numberOfTreePositions) continue;
-		for (uint32_t calls = 0; calls <= MAX_CALLS; ++calls) {
+		for (uint32_t calls = 0; calls <= POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex].maxCalls; ++calls) {
 #endif
 			Random random = Random::withSeed(originalSeed);
 			if (calls & 256) random.skip<-256>();
@@ -289,6 +333,8 @@ void *treechunkFilter(void *dat) {
 /* Reverses population seeds (returned by Filter 4) back to structure seeds.
    totalStructureSeedsPerRun must be set to 0 beforehand.
    Values are read from filterInputs[] and outputted to filterResults[], with the final count being stored in totalStructureSeedsPerRun.*/
+// TODO: Maybe store results directly in stage2FilterInputs[] if more than one chunk is in the input data, removing the need for filter5?
+// I'd need to ensure this filter can't return duplicate structure seeds, though, and I'd still need to save the structure seeds in filterInputs[] for filter8.
 #if CUDA_IS_PRESENT
 __global__ __launch_bounds__(ACTUAL_WORKERS_PER_BLOCK) void reversePopulationSeeds() {
 	uint32_t index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -325,8 +371,9 @@ void *reversePopulationSeeds(void *dat) {
 /*
 	For each structure seed, get the corresponding population chunk seed.
 	filter5_numberOfResultsPerRun must be set to 0 beforehand.
-	Values are read from filterInputs[] and outputted to stage2filterResults[], with the final count being stored in filter5_numberOfResultsPerRun.
+	Values are read from filterInputs[] and outputted to stage2filterInputs[], with the final count being stored in filter5_numberOfResultsPerRun.
 */
+// TODO: This isn't necessary if I can ensure reversePopulationSeeds() doesn't return duplicate structure seeds (see reversePopulationSeeds() for caveats, though)
 #if CUDA_IS_PRESENT
 __global__ __launch_bounds__(ACTUAL_WORKERS_PER_BLOCK) void filter5() {
 	uint32_t index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -368,12 +415,15 @@ void *filter5(void *dat) {
 			return NULL;
 		#endif
 	}
-	stage2filterResults[resultIndex] = Stage2Results{index, random.seed};
+	stage2filterInputs[resultIndex] = {index, random.seed};
 #if (!CUDA_IS_PRESENT)
 	return NULL;
 #endif
 }
 
+/* ...
+   filter6_numberOfResultsPerRun must be set to 0 beforehand.
+   Values are read from stage2filterInputs[] and outputted to stage2filterResults[], with the final count being stored in filter6_numberOfResultsPerRun.*/
 // TODO: Unify with filter2
 #if CUDA_IS_PRESENT
 __global__ __launch_bounds__(ACTUAL_WORKERS_PER_BLOCK) void filter6() {
@@ -413,7 +463,7 @@ void *filter6(void *dat) {
 	seed = random.seed;
 
 	uint32_t found = 0;
-	for (int32_t i = 0; i <= MAX_CALLS; i++) {
+	for (int32_t i = 0; i <= POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex].maxCalls; i++) {
 		#pragma unroll
 		for (uint32_t j = 0; j < POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex].numberOfTreePositions; j++) {
 			Random treeRandom(random);
@@ -437,12 +487,15 @@ void *filter6(void *dat) {
 			return NULL;
 		#endif
 	}
-	stage2filterResults[resultIndex] = Stage2Results{stage2filterResults[index].structureSeedIndex, seed};
+	stage2filterResults[resultIndex] = {stage2filterInputs[index].structureSeedIndex, seed};
 #if (!CUDA_IS_PRESENT)
 	return NULL;
 #endif
 }
 
+/* ...
+   filter7_numberOfResultsPerRun must be set to 0 beforehand.
+   Values are read from stage2filterInputs[] and outputted to stage2filterResults[], with the final count being stored in filter7_numberOfResultsPerRun.*/
 // TODO: Unify with filter3
 #if CUDA_IS_PRESENT
 __global__ __launch_bounds__(ACTUAL_WORKERS_PER_BLOCK) void filter7() {
@@ -463,7 +516,7 @@ void *filter7(void *dat) {
 
 	uint32_t found = 0;
 	Random random = Random::withSeed(seed);
-	for (int32_t i = 0; i <= MAX_CALLS; i++) {
+	for (int32_t i = 0; i <= POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex].maxCalls; i++) {
 		#pragma unroll
 		for (uint32_t j = 0; j < POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex].numberOfTreePositions; j++) {
 			Random treeRandom(random);
@@ -487,13 +540,17 @@ void *filter7(void *dat) {
 			return NULL;
 		#endif
 	}
-	stage2filterResults[resultIndex] = Stage2Results{stage2filterResults[index].structureSeedIndex, seed};
+	stage2filterResults[resultIndex] = {stage2filterInputs[index].structureSeedIndex, seed};
 #if (!CUDA_IS_PRESENT)
 	return NULL;
 #endif
 }
 
+/* ...
+   totalStructureSeedsPerRun must be set to 0 beforehand.
+   Values are read from filterInputs[] (structure seeds) and stage2filterInputs[] (treechunk seeds) and outputted to filterResults[], with the final count being stored in totalStructureSeedsPerRun.*/
 // TODO: See if unifying with treechunkFilter would be possible?
+// TODO: See if storing structure seeds directly in stage2FilterResults (instead of their indices) could be possible for filters 5, 6, and 7; that would remove the dependency on filterInputs[] 
 #if CUDA_IS_PRESENT
 __global__ __launch_bounds__(ACTUAL_WORKERS_PER_BLOCK) void filter8() {
     uint32_t index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -572,7 +629,7 @@ void *filter8(void *dat) {
 			return NULL;
 		#endif
 	}
-    uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&filter8_numberOfResultsPerRun), 1);
+    uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&totalStructureSeedsPerRun), 1);
     if (resultIndex >= ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) {
 		#if CUDA_IS_PRESENT
 			return;
@@ -586,12 +643,12 @@ void *filter8(void *dat) {
 #endif
 }
 
-/* Reverses structure seeds (returned by ...) back to potential worldseeds.
+/* Reverses structure seeds back to potential worldseeds.
    totalWorldseedsPerRun must be set to 0 beforehand.
    Values are read from filterInputs[] and outputted to filterResults[], with the final count being stored in totalWorldseedsPerRun.*/
 #if CUDA_IS_PRESENT
 __global__ __launch_bounds__(ACTUAL_WORKERS_PER_BLOCK) void biomeFilter() {
-	uint32_t index = blockIdx.x * blockDim.x + threadIdx.x;
+	uint64_t index = static_cast<uint64_t>(blockIdx.x) * blockDim.x + threadIdx.x;
 	uint64_t topBits = index & 65535;
 	index /= 65536;
 #else
@@ -600,7 +657,7 @@ void *biomeFilter(void *dat) {
 #endif
 	if (index >= totalStructureSeedsPerRun) return;
 	Generator g;
-	int32_t biomes[8095];
+	int biomes[8095]; // Largest possible output of Cubiomes' getMinCacheSize()
 	Version lastVersion;
 	uint64_t resultIndex;
 #if (!CUDA_IS_PRESENT)
@@ -609,15 +666,20 @@ void *biomeFilter(void *dat) {
 		uint64_t seed = (topBits << 48) + filterInputs[index];
 		for (uint32_t i = 0; i < POPULATION_CHUNKS_DATA.numberOfTreeChunks; ++i) {
 			Version currentVersion = POPULATION_CHUNKS_DATA.treeChunks[i].version;
-			if ((!topBits && !i) || currentVersion != lastVersion) {
-				setupGenerator(&g, versionToCubiomesVersion(currentVersion), largeBiomesFlag);
-				applySeed(&g, DIM_OVERWORLD, seed);
+			if (!i
+			#if (!CUDA_IS_PRESENT)
+				&& !topBits
+			#endif
+			 || currentVersion != lastVersion) {
+				setupGenerator(g, versionToCubiomesVersion(currentVersion), largeBiomesFlag);
+				applySeed(g, seed);
 				lastVersion = currentVersion;
 			}
+			printf("(Here?) ");
 			int32_t populationChunkBlockX = getMinBlockCoordinate(POPULATION_CHUNKS_DATA.treeChunks[i].populationChunkX, currentVersion);
 			int32_t populationChunkBlockZ = getMinBlockCoordinate(POPULATION_CHUNKS_DATA.treeChunks[i].populationChunkZ, currentVersion);
 			Range populationChunkRange = {1, populationChunkBlockX, populationChunkBlockZ, 16, 16, 64, 1};
-			if (genBiomes(&g, biomes, populationChunkRange)) {
+			if (genBiomes(g, biomes, populationChunkRange)) {
 				#if CUDA_IS_PRESENT
 					return;
 				#else
