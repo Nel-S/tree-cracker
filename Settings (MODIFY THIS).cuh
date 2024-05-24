@@ -22,8 +22,6 @@ constexpr const uint32_t PRINT_TIMESTAMPS_FREQUENCY = 256;
 constexpr const bool SILENT_MODE = false;
 /* If you desire, the cracker can be split into separate "partial runs" that each check only a portion of all possible seeds.
    You can use this to resume your progress later if it is interrupted.*/
-// constexpr const uint64_t NUMBER_OF_PARTIAL_RUNS = 1ULL << 24;
-// constexpr const uint64_t PARTIAL_RUN_TO_BEGIN_FROM = 2986739; // This counts as 1, 2, ..., NUMBER_OF_PARTIAL_RUNS.
 constexpr const uint64_t NUMBER_OF_PARTIAL_RUNS = 16;
 constexpr const uint64_t PARTIAL_RUN_TO_BEGIN_FROM = 1; // This counts as 1, 2, ..., NUMBER_OF_PARTIAL_RUNS.
 /* The maximum number of results to allow per run.
@@ -114,6 +112,6 @@ __device__ constexpr InputData INPUT_DATA[] = {
 #include "Test Data/1.16.1.cuh"
 #include "Test Data/1.16.4.cuh"
 /* To do that, comment out all of the INPUT_DATA code above, and uncomment and modify the line below.*/
-// #define INPUT_DATA TEST_DATA_16_4_3
+// #define INPUT_DATA TEST_DATA_16_4_1
 
 #endif

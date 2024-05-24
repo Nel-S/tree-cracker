@@ -59,7 +59,7 @@ __host__ __device__ [[nodiscard]] constexpr uint64_t constexprCombination(const 
 }
 
 /* Returns a compile-time *approximation* of e^x. (I.e. this becomes less accurate the further one drifts from 0.)
-   Derived from Nayuki on Wikipedia (https://en.wikipedia.org/w/index.php?diff=2860008).*/
+   Adapted from Nayuki on Wikipedia (https://en.wikipedia.org/w/index.php?diff=2860008).*/
 __host__ __device__ [[nodiscard]] constexpr double constexprExp(const double x) noexcept {
 	double approximation = 1.;
 	for (uint64_t i = 25; i; --i) approximation = 1. + x*approximation/i;

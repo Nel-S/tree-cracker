@@ -38,6 +38,7 @@ Then use `nvcc` to compile the program:
 ```bash
 (Linux)         nvcc main.cu -o "main" -O3
 (Windows)       nvcc main.cu -o "main.exe" -O3
+(MacOS)         nvcc main.cu -o "main.app" -O3
 (Google Colab) !nvcc main.cu -o "main" -O3
 ```
 Depending on your input data, the compilation may take almost a full minute or even longer.<br />
@@ -49,7 +50,7 @@ The compiler may print warnings akin to `Stack size for entry function '_Z11biom
 (MacOS)         open -a main.app
 (Google Colab) !.\main
 ```
-After a (potentially significant) amount of time, if all goes well, a file should ultimately be created (or a list should be printed to the screen, depending on your settings) containing your possible worldseeds.
+After a (potentially significant) amount of time, if all goes well, a file should ultimately be created (or a list should be printed to the screen, depending on your settings) containing your possible <!-- worldseeds --> structure seeds.
 
 ## Acknowledgements
 I would like to give a very large Thank You to
