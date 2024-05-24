@@ -8,8 +8,8 @@ Given details about a set of Minecraft trees (such as their coordinates, types, 
 ## Prerequisites and Limitations
 At the time of writing, this program only supports
 - Java Edition.
-- Versions <!-- 1.6.4, 1.8.9, 1.12.2, --> 1.14.4, 1.16.1, or 1.16.4. (Informally, if a specific version isn't supported, setting the relevant data to the next chronological supported version&mdash;e.g. marking 1.7 as 1.8.9&mdash;will sometimes still yield results.)
-- Oak (normal or large), Spruce, Pine, or Birch trees.
+- Versions <!-- 1.6.4, 1.8.9, 1.12.2, --> 1.14.4, 1.16.1, or 1.16.4. (Informally, if a specific version isn't supported, setting the relevant data to the next chronological supported version&mdash;e.g. marking 1.16.2 as 1.16.4&mdash;will sometimes still yield results.)
+- Oak (normal or large) <!--, Spruce, Pine, --> or Birch trees.
 - Forest or Birch Forest <!-- or Taiga --> biomes.
 If you would like to add support for another version, tree type, or biome, or otherwise improve this code or report a bug with it, please feel free to open a pull request.
 
