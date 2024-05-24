@@ -4,24 +4,70 @@
 #include "RNG Logic.cuh"
 #include "../Allowed Values for Settings.cuh"
 
+/* ==================
+	HELPER FUNCTIONS
+   ================== */
+
 // Given a block coordinate along one axis, and the version, returns the corresponding population chunk coordinate along that axis.
 __device__ constexpr int32_t getPopulationChunkCoordinate(const int32_t blockCoordinate, const Version version) noexcept {
-	return (blockCoordinate - 8*static_cast<int32_t>(version <= Version::v1_12_2)) >> 4;
+	return (blockCoordinate - 8*static_cast<int32_t>(version <= static_cast<Version>(ExperimentalVersion::v1_12_2))) >> 4;
 }
 
 // Given a block coordinate along one axis, and the version, returns the block's offset along that axis within the corresponding population chunk.
 __device__ constexpr uint32_t getOffsetWithinPopulationChunk(const int32_t blockCoordinate, const Version version) noexcept {
-	return (blockCoordinate - 8*static_cast<int32_t>(version <= Version::v1_12_2)) & 15;
+	return (blockCoordinate - 8*static_cast<int32_t>(version <= static_cast<Version>(ExperimentalVersion::v1_12_2))) & 15;
 }
 
 // Given a population chunk coordinate along one axis, and the version, returns its corresponding minimum block coordinate along that axis.
 __host__ __device__ constexpr int32_t getMinBlockCoordinate(const int32_t populationChunkCoordinate, const Version version) noexcept {
-	return 16*populationChunkCoordinate + 8*static_cast<int32_t>(version <= Version::v1_12_2);
+	return 16*populationChunkCoordinate + 8*static_cast<int32_t>(version <= static_cast<Version>(ExperimentalVersion::v1_12_2));
 }
 
 // Given a population chunk coordinate along one axis, and the version, returns its corresponding maximum block coordinate along that axis.
 __host__ __device__ constexpr int32_t getMaxBlockCoordinate(const int32_t populationChunkCoordinate, const Version version) noexcept {
 	return getMinBlockCoordinate(populationChunkCoordinate, version) + 15;
+}
+
+// Returns the decorator salt of a treechunk under a specified biome and version.
+__device__ constexpr uint64_t getTreeSalt(const Biome biome, const Version version) {
+	if (version <= static_cast<Version>(ExperimentalVersion::v1_12_2)) return 0;
+	// Andrew:
+	// 1.14.4 Forest - 60001
+	// 1.16.4 Forest - 80001 ??? Not sure if that's what it was
+	switch (version) {
+		// Non-exhaustive examples:
+		// 1.13/1.14 Swamp/Swamp Hills trees: 60000
+		// 1.13/1.14 Snowy Tundra/Snowy Mountains/Ice Spikes(?) tall taiga trees: 60000
+		// 1.13 Wooded Badlands Plateau/Modified Wooded Badlands Plateau trees: 60000
+		// 1.13/1.14 Birch Forest/Birch Forest Hills trees: 60001
+
+		case Version::v1_14_4: // Also seemingly 1.13-1.15 for those three biomes
+			switch (biome) {
+				case Biome::Forest:
+				case Biome::Birch_Forest:
+				case static_cast<Biome>(ExperimentalBiome::Taiga):
+					return 60001;
+				default: THROW_EXCEPTION(0, "ERROR: Unsupported biome provided.")
+			}
+		case Version::v1_16_1:
+		case Version::v1_16_4:
+			switch (biome) {
+				case Biome::Forest:
+				case Biome::Birch_Forest:
+				case static_cast<Biome>(ExperimentalBiome::Taiga):
+					return 80001;
+				default: THROW_EXCEPTION(0, "ERROR: Unsupported biome provided.")
+			}
+		case static_cast<Version>(ExperimentalVersion::v1_17_1): // Or 1.17.0, I'm not sure
+			switch (biome) {
+				case Biome::Forest:
+				case Biome::Birch_Forest:
+				case static_cast<Biome>(ExperimentalBiome::Taiga):
+					return 80002;
+				default: THROW_EXCEPTION(0, "ERROR: Unsupported biome provided.")
+			}
+		default: THROW_EXCEPTION(0, "ERROR: Unsupported version provided.")
+	}
 }
 
 
@@ -55,12 +101,12 @@ __device__ constexpr bool biomeContainsTreeType(const Biome biome, const TreeTyp
 
 	switch (biome) {
 		case Biome::Forest:
-			if (treeType == TreeType::Large_Oak) return version <= Version::v1_6_4 || Version::v1_8_9 < version;
+			if (treeType == TreeType::Large_Oak) return version <= static_cast<Version>(ExperimentalVersion::v1_6_4) || static_cast<Version>(ExperimentalVersion::v1_8_9) < version;
 			return treeType == TreeType::Oak || treeType == TreeType::Birch;
 		case Biome::Birch_Forest:
 			return treeType == TreeType::Birch;
-		case Biome::Taiga:
-			return treeType == TreeType::Pine || treeType == TreeType::Spruce;
+		case static_cast<Biome>(ExperimentalBiome::Taiga):
+			return treeType == static_cast<TreeType>(ExperimentalTreeType::Pine) || treeType == static_cast<TreeType>(ExperimentalTreeType::Spruce);
 		default: THROW_EXCEPTION(false, "ERROR: Unsupported biome provided.\n")
 	}
 }
@@ -70,14 +116,14 @@ __device__ constexpr bool biomeContainsTreeType(const Biome biome, const TreeTyp
 __host__ __device__ TreeType getNextTreeType(Random &random, const Biome biome, const Version version) {
 	switch (biome) {
 		case Biome::Forest:
-			if (version <= Version::v1_6_4) {
+			if (version <= static_cast<Version>(ExperimentalVersion::v1_6_4)) {
 				if (!random.nextInt(5)) return TreeType::Birch;
 				if (!random.nextInt(10)) return TreeType::Large_Oak;
-			} else if (version <= Version::v1_8_9) {
+			} else if (version <= static_cast<Version>(ExperimentalVersion::v1_8_9)) {
 				// Andrew: Not sure exactly in which versions this happens
 				// NelS: Might also be 1.12.2.
 				if (!random.nextInt(5)) return TreeType::Birch;
-			} else if (version <= Version::v1_12_2) {
+			} else if (version <= static_cast<Version>(ExperimentalVersion::v1_12_2)) {
 				if (!random.nextInt(5)) return TreeType::Birch;
 				if (!random.nextInt(10)) return TreeType::Large_Oak;
 			} else {
@@ -87,9 +133,9 @@ __host__ __device__ TreeType getNextTreeType(Random &random, const Biome biome, 
 			return TreeType::Oak;
 		case Biome::Birch_Forest:
 			return TreeType::Birch;
-		case Biome::Taiga:
-			if (!random.nextInt(3)) return TreeType::Pine;
-			return TreeType::Spruce;
+		case static_cast<Biome>(ExperimentalBiome::Taiga):
+			if (!random.nextInt(3)) return static_cast<TreeType>(ExperimentalTreeType::Pine);
+			return static_cast<TreeType>(ExperimentalTreeType::Spruce);
 		default: THROW_EXCEPTION(TreeType::Unknown, "ERROR: Unsupported biome provided.\n")
 	}
 }
@@ -100,7 +146,7 @@ __host__ __device__ constexpr int32_t biomeMinTreeCount(const Biome biome, const
 	switch (biome) {
 		case Biome::Forest:
 		case Biome::Birch_Forest:
-		case Biome::Taiga:
+		case static_cast<Biome>(ExperimentalBiome::Taiga):
 			return 10;
 		default: THROW_EXCEPTION(INT32_MIN, "ERROR: Unsupported biome provided.\n")
 	}
@@ -115,11 +161,12 @@ __host__ __device__ constexpr float biomeExtraTreeChance(const Biome biome, cons
    If the selected in-game world positions would be invalid for the trees, the number actually generated will be fewer.*/
 __host__ __device__ constexpr int32_t biomeMaxTreeCount(const Biome biome, const Version version) {
 	int32_t minTreeCount = biomeMinTreeCount(biome, version);
+	// Account for if biomeMinTreeCount returns an error
 	#if CUDA_IS_PRESENT
 		if (minTreeCount == INT32_MIN) return INT32_MIN;
 	#endif
 	// Andrew: Probably not 1.8.9
-	if (version <= Version::v1_8_9) return minTreeCount + 1;
+	if (version <= static_cast<Version>(ExperimentalVersion::v1_8_9)) return minTreeCount + 1;
 	return minTreeCount + static_cast<int32_t>(biomeExtraTreeChance(biome, version) != 0.0f);
 }
 
@@ -128,8 +175,7 @@ __host__ __device__ constexpr int32_t biomeMaxTreeCount(const Biome biome, const
    Random will be advanced 1-2 times.*/
 __host__ __device__ uint32_t biomeTreeCount(Random &random, const Biome biome, const Version version) {
 	int32_t treeCount = biomeMinTreeCount(biome, version);
-
-	if (version <= Version::v1_8_9) return treeCount + static_cast<int32_t>(!random.nextInt(10));
+	if (version <= static_cast<Version>(ExperimentalVersion::v1_8_9)) return treeCount + static_cast<int32_t>(!random.nextInt(10));
 	return treeCount + static_cast<int32_t>(random.nextFloat() < biomeExtraTreeChance(biome, version));
 }
 
@@ -140,7 +186,7 @@ __device__ constexpr int32_t biomeMaxRandomCalls(const Biome biome, const Versio
 			return biomeMaxTreeCount(biome, version) * 21;
 		case Biome::Birch_Forest:
 			return biomeMaxTreeCount(biome, version) * 19;
-		case Biome::Taiga:
+		case static_cast<Biome>(ExperimentalBiome::Taiga):
 			return biomeMaxTreeCount(biome, version) * 8;
 		default: THROW_EXCEPTION(0, "ERROR: Unsupported biome provided.\n")
 	}
@@ -597,8 +643,8 @@ struct TreeChunkPosition {
 			case TreeType::Oak:       return this->oakAttributes.canBeGeneratedBy(random, version);
 			case TreeType::Large_Oak: return this->largeOakAttributes.canBeGeneratedBy(random, version);
 			case TreeType::Birch:     return this->birchAttributes.canBeGeneratedBy(random, version);
-			case TreeType::Pine:      return this->pineAttributes.canBeGeneratedBy(random, version);
-			case TreeType::Spruce:    return this->spruceAttributes.canBeGeneratedBy(random, version);
+			case static_cast<TreeType>(ExperimentalTreeType::Pine):      return this->pineAttributes.canBeGeneratedBy(random, version);
+			case static_cast<TreeType>(ExperimentalTreeType::Spruce):    return this->spruceAttributes.canBeGeneratedBy(random, version);
 			default: THROW_EXCEPTION(false, "ERROR: Unsupported tree type provided.\n")
 		}
 	}
@@ -624,7 +670,7 @@ struct TreeChunkPosition {
 				if (this->possibleTreeTypes.contains(TreeType::Oak)) {
 					++treeTypeCounter;
 					attributeBits += this->oakAttributes.getEstimatedBits() + constexprLog2(5./4.); // nextInt(5) != 0
-					if (version <= Version::v1_6_4 || Version::v1_8_9 < version) attributeBits += constexprLog2(10./9.); // nextInt(10) != 0
+					if (version <= static_cast<Version>(ExperimentalVersion::v1_6_4) || static_cast<Version>(ExperimentalVersion::v1_8_9) < version) attributeBits += constexprLog2(10./9.); // nextInt(10) != 0
 				}
 				if (this->possibleTreeTypes.contains(TreeType::Large_Oak)) {
 					++treeTypeCounter;
@@ -641,12 +687,12 @@ struct TreeChunkPosition {
 					attributeBits += this->birchAttributes.getEstimatedBits();
 				}
 				break;
-			case Biome::Taiga:
-				if (this->possibleTreeTypes.contains(TreeType::Pine)) {
+			case static_cast<Biome>(ExperimentalBiome::Taiga):
+				if (this->possibleTreeTypes.contains(static_cast<TreeType>(ExperimentalTreeType::Pine))) {
 					++treeTypeCounter;
 					attributeBits += this->pineAttributes.getEstimatedBits() + constexprLog2(3.); // nextInt(3) == 0
 				}
-				if (this->possibleTreeTypes.contains(TreeType::Spruce)) {
+				if (this->possibleTreeTypes.contains(static_cast<TreeType>(ExperimentalTreeType::Spruce))) {
 					++treeTypeCounter;
 					attributeBits += this->spruceAttributes.getEstimatedBits() + constexprLog2(3./2.); // nextInt(3) != 0
 				}
@@ -675,10 +721,10 @@ struct TreeChunkPosition {
 			case TreeType::Birch:
 				BirchAttributes::skip(random, isValidIngamePosition, version);
 				break;
-			case TreeType::Pine:
+			case static_cast<TreeType>(ExperimentalTreeType::Pine):
 				PineAttributes::skip(random, isValidIngamePosition, version);
 				break;
-			case TreeType::Spruce:
+			case static_cast<TreeType>(ExperimentalTreeType::Spruce):
 				SpruceAttributes::skip(random, isValidIngamePosition, version);
 				break;
 			default: THROW_EXCEPTION(/*None*/, "ERROR: Unsupported tree type provided.\n")
@@ -694,8 +740,6 @@ struct TreeChunk {
 	uint32_t numberOfTreePositions;
 	int32_t maxCalls, maxTreeCount, rangeOfPossibleSkips;
 	uint64_t salt;
-	// Might only need this for first population chunk instead of all population chunks, in which case it'd be better to have this as a global constexpr variable
-	// bool collapseNearbySeedsFlag;
 
 	__device__ constexpr TreeChunk() noexcept :
 		version(),
@@ -708,7 +752,6 @@ struct TreeChunk {
 		maxTreeCount(),
 		rangeOfPossibleSkips(),
 		salt()
-		// , collapseNearbySeedsFlag(),
 		{}
 	__device__ constexpr TreeChunk(const Biome biome, const Version version) noexcept :
 		version(version),
@@ -719,12 +762,8 @@ struct TreeChunk {
 		numberOfTreePositions(0),
 		maxCalls(biomeMaxRandomCalls(biome, version)),
 		maxTreeCount(biomeMaxTreeCount(biome, version)),
-		rangeOfPossibleSkips(1 + (version <= Version::v1_12_2 ? 10000 : maxCalls)),
-		// Andrew:
-		// 1.14.4 Forest - 60001
-		// 1.16.4 Forest - 80001 ??? Not sure if that's what it was
-		salt(version <= Version::v1_14_4 ? 60001 : 80001)
-		// , collapseNearbySeedsFlag(version <= Version::v1_12_2),
+		rangeOfPossibleSkips(1 + (version <= static_cast<Version>(ExperimentalVersion::v1_12_2) ? 10000 : maxCalls)),
+		salt(getTreeSalt(biome, version))
 		{}
 	__device__ constexpr TreeChunk(const Biome biome, const Version version, const int32_t populationChunkX, const int32_t populationChunkZ) noexcept :
 		version(version),
@@ -735,12 +774,8 @@ struct TreeChunk {
 		numberOfTreePositions(0),
 		maxCalls(biomeMaxRandomCalls(biome, version)),
 		maxTreeCount(biomeMaxTreeCount(biome, version)),
-		rangeOfPossibleSkips(1 + (version <= Version::v1_12_2 ? 10000 : maxCalls)),
-		// Andrew:
-		// 1.14.4 Forest - 60001
-		// 1.16.4 Forest - 80001 ??? Not sure if that's what it was
-		salt(version <= Version::v1_14_4 ? 60001 : 80001)
-		// , collapseNearbySeedsFlag(version <= Version::v1_12_2)
+		rangeOfPossibleSkips(1 + (version <= static_cast<Version>(ExperimentalVersion::v1_12_2) ? 10000 : maxCalls)),
+		salt(getTreeSalt(biome, version))
 		{}
 
 	__device__ constexpr TreeChunkPosition &createNewTree(const int32_t x, const int32_t z, const TreeType treeType) {
@@ -784,11 +819,11 @@ struct TreeChunk {
 			case TreeType::Birch:
 				this->createNewTree(treeData.coordinate.x, treeData.coordinate.z, TreeType::Birch).birchAttributes = BirchAttributes(treeData.trunkHeight, SetOfLeafStates(treeData.leafStates, this->version));
 				break;
-			case TreeType::Pine:
-				this->createNewTree(treeData.coordinate.x, treeData.coordinate.z, TreeType::Pine).pineAttributes = PineAttributes(treeData.trunkHeight, treeData.leavesHeight, treeData.pineLeavesWidestRadius);
+			case static_cast<TreeType>(ExperimentalTreeType::Pine):
+				this->createNewTree(treeData.coordinate.x, treeData.coordinate.z, static_cast<TreeType>(ExperimentalTreeType::Pine)).pineAttributes = PineAttributes(treeData.trunkHeight, treeData.leavesHeight, treeData.pineLeavesWidestRadius);
 				break;
-			case TreeType::Spruce:
-				this->createNewTree(treeData.coordinate.x, treeData.coordinate.z, TreeType::Spruce).spruceAttributes = SpruceAttributes(treeData.trunkHeight, treeData.logsBelowBottommostLeaves, treeData.spruceLeavesWidestRadius, treeData.topmostLeavesRadius, treeData.leavesAboveTrunk);
+			case static_cast<TreeType>(ExperimentalTreeType::Spruce):
+				this->createNewTree(treeData.coordinate.x, treeData.coordinate.z, static_cast<TreeType>(ExperimentalTreeType::Spruce)).spruceAttributes = SpruceAttributes(treeData.trunkHeight, treeData.logsBelowBottommostLeaves, treeData.spruceLeavesWidestRadius, treeData.topmostLeavesRadius, treeData.leavesAboveTrunk);
 				break;
 			case TreeType::Unknown:
 				this->createNewTree(treeData.coordinate.x, treeData.coordinate.z, TreeType::Unknown);

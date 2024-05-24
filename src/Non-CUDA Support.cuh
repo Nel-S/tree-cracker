@@ -35,19 +35,19 @@
 	pthread_mutex_t __mutex;
 	// Atomically adds the specified value to the value stored in the specified address. Returns the original value in the address.
 	unsigned long long atomicAdd(unsigned long long *address, const int value) {
-		unsigned long long temp = *address;
+		unsigned long long __temp = *address;
 		pthread_mutex_lock(&__mutex);
 		*address += static_cast<unsigned long long>(value);
 		pthread_mutex_unlock(&__mutex);
-		return temp;
+		return __temp;
 	}
 	// Atomically ORs the specified value to the value stored in the specified address. Returns the original value in the address.
 	unsigned long long atomicOr(uint32_t *address, const uint32_t value) {
-		uint32_t temp = *address;
+		uint32_t __temp = *address;
 		pthread_mutex_lock(&__mutex);
 		*address |= value;
 		pthread_mutex_unlock(&__mutex);
-		return temp;
+		return __temp;
 	}
 
 	pthread_t *threads;
@@ -75,9 +75,11 @@
 		return cudaSuccess;
 	}
 	#define THROW_EXCEPTION(DEFAULT_VALUE_IF_CUDA, ERROR_MESSAGE_IF_NOT_CUDA) throw std::invalid_argument(ERROR_MESSAGE_IF_NOT_CUDA);
+	#define FILTER_RETURN return NULL
 #else
 	#define CUDA_IS_PRESENT true
 	#define THROW_EXCEPTION(DEFAULT_VALUE_IF_CUDA, ERROR_MESSAGE_IF_NOT_CUDA) return DEFAULT_VALUE_IF_CUDA;
+	#define FILTER_RETURN return
 #endif
 
 #define ABORT(...) { \

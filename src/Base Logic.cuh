@@ -2,96 +2,105 @@
 #define __BASE_CUH
 
 #include "Non-CUDA Support.cuh"
+#include <string>
 
-// Returns the compile-time minimum of a and b.
-__host__ __device__ constexpr int32_t constexprMin(const int32_t a, const int32_t b) noexcept {
+// Returns the compile-time minimum of two comparable values.
+template <class T>
+__host__ __device__ [[nodiscard]] constexpr T constexprMin(const T &a, const T &b) noexcept {
 	return a < b ? a : b;
 }
-// Returns the compile-time minimum of a and b.
-__host__ __device__ constexpr uint32_t constexprMin(const uint32_t a, const uint32_t b) noexcept {
-	return a < b ? a : b;
-}
-// Returns the compile-time minimum of a and b.
-__host__ __device__ constexpr int64_t constexprMin(const int64_t a, const int64_t b) noexcept {
-	return a < b ? a : b;
-}
-// Returns the compile-time minimum of a and b.
-__host__ __device__ constexpr uint64_t constexprMin(const uint64_t a, const uint64_t b) noexcept {
-	return a < b ? a : b;
-}
-
-// Returns the compile-time maximum of a and b.
-__host__ __device__ constexpr int32_t constexprMax(const int32_t a, const int32_t b) noexcept {
+// Returns the compile-time maximum of two comparable values.
+template <class T>
+__host__ __device__ [[nodiscard]] constexpr T constexprMax(const T &a, const T &b) noexcept {
 	return a > b ? a : b;
 }
-__host__ __device__ constexpr uint32_t constexprMax(const uint32_t a, const uint32_t b) noexcept {
-	return a > b ? a : b;
-}
-// Returns the compile-time maximum of a and b.
-__host__ __device__ constexpr int64_t constexprMax(const int64_t a, const int64_t b) noexcept {
-	return a > b ? a : b;
-}
-__host__ __device__ constexpr uint64_t constexprMax(const uint64_t a, const uint64_t b) noexcept {
-	return a > b ? a : b;
+// Swaps two elements in compilation-time.
+// TODO: Create backup for std::move in case it isn't constexpr on a device?
+template <class T>
+__device__ constexpr void constexprSwap(T &first, T &second) noexcept {
+	auto __temp = std::move(first);
+	first = std::move(second);
+	second = std::move(__temp);
 }
 
-// Returns the compile-time floor of a number.
-__host__ __device__ constexpr int64_t constexprFloor(const double x) noexcept {
+// Returns the compile-time floor of a real number.
+__host__ __device__ [[nodiscard]] constexpr int64_t constexprFloor(const double x) noexcept {
 	int64_t xAsInteger = static_cast<int64_t>(x);
     return xAsInteger - static_cast<int64_t>(x < xAsInteger);
 }
 
-// Returns the compile-time ceiling of a number.
-// From s3cur3 on Stack Overflow (https://stackoverflow.com/a/66146159).
-__host__ __device__ constexpr int64_t constexprCeil(const double x) noexcept {
+/* Returns the compile-time ceiling of a real number.
+   From s3cur3 on Stack Overflow (https://stackoverflow.com/a/66146159).*/
+__host__ __device__ [[nodiscard]] constexpr int64_t constexprCeil(const double x) noexcept {
 	int64_t xAsInteger = static_cast<int64_t>(x);
     return xAsInteger + static_cast<int64_t>(x > xAsInteger);
 }
 
-// Returns the compile-time rounded value of a number.
-// From Wikipedia.
-__host__ __device__ constexpr int64_t constexprRound(const double x) noexcept {
+/* Returns the compile-time rounded value of a real number.
+   From Verdy p on Wikipedia (https://en.wikipedia.org/w/index.php?diff=378485717).*/
+__host__ __device__ [[nodiscard]] constexpr int64_t constexprRound(const double x) noexcept {
 	return constexprFloor(x + 0.5);
 }
-
-// Returns a compile-time approximation of e^x. (This becomes less accurate the further one drifts from 0.)
-__host__ __device__ constexpr double constexprExp(const double x) noexcept {
-	return 1. + x*(1. + x/2.*(1. + x/3.*(1. + x/4.*(1. + x/5.*(1. + x/6.*(1. + x/7.))))));
+/* Returns the compile-time factorial of a natural number.
+   WARNING: this will overflow (and thus give results modulo 2^64 instead) for any value greater than 20.*/
+__host__ __device__ [[nodiscard]] constexpr uint64_t constexprFactorial(const uint64_t n) noexcept {
+	uint64_t out = 1;
+	for (uint64_t i = 2; i <= n; ++i) out *= i;
+	return out;
 }
 
-// Returns a compile-time approximation of log(x). (This becomes less accurate the further one drifts from 0.)
-__host__ __device__ constexpr double constexprLog(const double x) noexcept {
-	double y = x;
+/* Returns the number of ways to choose k objects from a set of n objects, where the order the selections are made does not matter.
+   WARNING: this will overflow (and thus give results modulo 2^64 instead) if n > 40 and k > 20.*/
+// TODO: Tighten bound in description
+__host__ __device__ [[nodiscard]] constexpr uint64_t constexprCombination(const uint64_t n, const uint64_t k) noexcept {
+	uint64_t out = 1;
+	for (uint64_t i = n; constexprMax(k, n - k) < i; --i) out *= i;
+	return out/constexprFactorial(constexprMin(k, n - k));
+}
+
+/* Returns a compile-time *approximation* of e^x. (I.e. this becomes less accurate the further one drifts from 0.)
+   Derived from Nayuki on Wikipedia (https://en.wikipedia.org/w/index.php?diff=2860008).*/
+__host__ __device__ [[nodiscard]] constexpr double constexprExp(const double x) noexcept {
+	double approximation = 1.;
+	for (uint64_t i = 25; i; --i) approximation = 1. + x*approximation/i;
+	return approximation;
+}
+
+/* Returns a compile-time *approximation* of ln(x). (I.e. this becomes less accurate the further one drifts from 0.)
+   From JRSpriggs on Wikipedia (https://en.wikipedia.org/w/index.php?diff=592947838).*/
+__host__ __device__ [[nodiscard]] constexpr double constexprLog(const double x) noexcept {
+	double approximation = x;
 	for (uint32_t i = 0; i < 25; ++i) {
-		double yExp = constexprExp(y);
-		y += 2*(x - yExp)/(x + yExp);
+		double approximationExponent = constexprExp(approximation);
+		approximation += 2*(x - approximationExponent)/(x + approximationExponent);
 	}
-	return y;
+	return approximation;
 }
 
-// Returns a compile-time approximation of log_2(x). (This becomes less accurate the further one drifts from 0.)
-__host__ __device__ constexpr double constexprLog2(const double x) noexcept {
+/* Returns a compile-time *approximation* of log_2(x). (I.e. this becomes less accurate the further one drifts from 0.)
+   From David Eppstein on Wikipedia (https://en.wikipedia.org/w/index.php?diff=629917843).*/
+__host__ __device__ [[nodiscard]] constexpr double constexprLog2(const double x) noexcept {
 	return constexprLog(x)/0.693147180559945309417; // ln(2)
 }
 
 
 // Returns 2**bits.
-__host__ __device__ constexpr uint64_t twoToThePowerOf(const int32_t bits) noexcept {
+__host__ __device__ [[nodiscard]] constexpr uint64_t twoToThePowerOf(const int32_t bits) noexcept {
 	return UINT64_C(1) << bits;
 }
 
 // Returns a [bits]-bit-wide mask.
-__host__ __device__ constexpr uint64_t getBitmask(const int32_t bits) noexcept {
+__host__ __device__  [[nodiscard]] constexpr uint64_t getBitmask(const int32_t bits) noexcept {
 	return twoToThePowerOf(bits) - UINT64_C(1);
 }
 
 // Returns the lowest [bits] bits of value.
-__host__ __device__ constexpr uint64_t mask(const uint64_t value, const int32_t bits) noexcept {
+__host__ __device__  [[nodiscard]] constexpr uint64_t mask(const uint64_t value, const int32_t bits) noexcept {
 	return value & getBitmask(bits);
 }
 
 // Returns x such that value * x == 1 (mod 2^64).
-__host__ __device__ constexpr uint64_t inverseModulo(const uint64_t value) noexcept {
+__host__ __device__  [[nodiscard]] constexpr uint64_t inverseModulo(const uint64_t value) noexcept {
 	uint64_t x = ((value << 1 ^ value) & 4) << 1 ^ value;
 	x += x - value * x * x;
 	x += x - value * x * x;
@@ -100,7 +109,7 @@ __host__ __device__ constexpr uint64_t inverseModulo(const uint64_t value) noexc
 }
 
 // Returns the number of trailing zeroes in value.
-__host__ __device__ constexpr uint32_t getNumberOfTrailingZeroes(const uint64_t value) noexcept {
+__host__ __device__  [[nodiscard]] constexpr uint32_t getNumberOfTrailingZeroes(const uint64_t value) noexcept {
 	if (!value) return 64;
 	uint32_t count = 0;
 	for (uint64_t v = value; !(v & 1); v >>= 1) ++count;
@@ -108,46 +117,32 @@ __host__ __device__ constexpr uint32_t getNumberOfTrailingZeroes(const uint64_t 
 }
 
 // Returns the number of leading zeroes in value.
-__host__ __device__ constexpr uint32_t getNumberOfLeadingZeroes(const uint64_t value) noexcept {
+__host__ __device__  [[nodiscard]] constexpr uint32_t getNumberOfLeadingZeroes(const uint64_t value) noexcept {
 	if (!value) return 64;
 	uint32_t count = 0;
-	for (uint64_t v = value; !(v & 0x8000000000000000); v <<= 1) ++count;
+	for (uint64_t v = value; !(v & (UINT64_C(1) << 63)); v <<= 1) ++count;
 	return count;
 }
 
-__host__ __device__ constexpr uint32_t getNumberOfOnesIn(uint32_t x) noexcept {
+__host__ __device__ [[nodiscard]] constexpr uint32_t getNumberOfOnesIn(const uint32_t x) noexcept {
 	uint32_t count = 0;
-	for (; static_cast<bool>(x); x >>= 1) count += static_cast<int>(x & 1);
+	for (uint32_t i = x; static_cast<bool>(i); i >>= 1) count += static_cast<int>(i & 1);
 	return count;
 }
 
 
 // For pre-C++17
-// TODO: Might not work correctly?
-const char *getFilepathStem(const char *filepath) noexcept {
-	char *out = NULL;
-	std::strncpy(out, filepath, std::strrchr(filepath, '.') - filepath);
-	return std::strcat(out, ""); // To add null terminator
-}
-std::string getFilepathStem(const std::string filepath) noexcept {
-	// char *out = NULL;
-	// strncpy(out, filepath.c_str(), std::strrchr(filepath.c_str(), '.') - filepath.c_str());
-	// return std::string(out);
-	return std::string(getFilepathStem(filepath.c_str()));
+// TODO: Also create (working) const char * implementation?
+std::string getFilepathStem(const std::string &filepath) {
+	return filepath.substr(0, filepath.rfind('.'));
 }
 
 // For pre-C++17
-// TODO: Might not work correctly?
 const char *getFilepathExtension(const char *filepath) noexcept {
-	char *out = NULL;
-	std::strcpy(out, std::strrchr(filepath, '.'));
-	return out;
+	return std::strrchr(filepath, '.');
 }
-std::string getFilepathExtension(const std::string filepath) noexcept {
-	// char *out = NULL;
-	// strcpy(out, std::strrchr(filepath.c_str(), '.'));
-	// return std::string(out);
-	return std::string(getFilepathExtension(filepath.c_str()));
+std::string getFilepathExtension(const std::string &filepath) noexcept {
+	return std::string(std::strrchr(filepath.c_str(), '.'));
 }
 
 // A two-dimensional coordinate.
