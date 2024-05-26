@@ -16,7 +16,7 @@ __host__ __device__ constexpr const char *toString(const Biome biome) {
 		case Biome::Forest: return "Forest";
 		case Biome::Birch_Forest: return "Birch Forest";
 		case static_cast<Biome>(ExperimentalBiome::Taiga): return "Taiga";
-		default: THROW_EXCEPTION("", "ERROR: Unsupported biome provided.\n")
+		default: THROW_EXCEPTION("", "ERROR: Unsupported biome provided.\n");
 	}
 }
 
@@ -29,7 +29,8 @@ __host__ __device__ constexpr const char *toString(const Version version) {
 		case Version::v1_14_4: return "1.14.4";
 		case Version::v1_16_1: return "1.16.1";
 		case Version::v1_16_4: return "1.16.4";
-		default: THROW_EXCEPTION("", "ERROR: Unsupported version provided.\n")
+		case static_cast<Version>(ExperimentalVersion::v1_17_1): return "1.17.1";
+		default: THROW_EXCEPTION("", "ERROR: Unsupported version provided.\n");
 	}
 }
 
@@ -48,7 +49,7 @@ __host__ __device__ constexpr const char *toString(const LeafPosition leafPositi
 		case LeafPosition::SouthwestUpperLeaf:  return  "Upper Southwest leaf";
 		case LeafPosition::NortheastUpperLeaf:  return  "Upper Northeast leaf";
 		case LeafPosition::SoutheastUpperLeaf:  return  "Upper Southeast leaf";
-		default: THROW_EXCEPTION("", "ERROR: Unsupported leaf position provided.\n")
+		default: THROW_EXCEPTION("", "ERROR: Unsupported leaf position provided.\n");
 	}
 }
 
@@ -58,7 +59,7 @@ __host__ __device__ constexpr const char *toString(const LeafState leafState) {
 		case LeafState::LeafWasNotPlaced: return "Leaf was not placed";
 		case LeafState::LeafWasPlaced: return "Leaf was placed";
 		case LeafState::Unknown: return "Unknown";
-		default: THROW_EXCEPTION("", "ERROR: Unsupported leaf state provided.\n")
+		default: THROW_EXCEPTION("", "ERROR: Unsupported leaf state provided.\n");
 	}
 }
 
@@ -71,7 +72,7 @@ __host__ __device__ constexpr const char *toString(const TreeType treetype) {
 		case static_cast<TreeType>(ExperimentalTreeType::Pine): return "Pine";
 		case static_cast<TreeType>(ExperimentalTreeType::Spruce): return "Spruce";
 		case TreeType::Unknown: return "Unknown";
-		default: THROW_EXCEPTION("", "ERROR: Unsupported tree type provided.\n")
+		default: THROW_EXCEPTION("", "ERROR: Unsupported tree type provided.\n");
 	}
 }
 

@@ -19,7 +19,7 @@ __device__ constexpr size_t getIDsArraySize(const Version version, const bool la
 		case Version::v1_16_1:
 		case Version::v1_16_4:
 			return largeBiomes ? 8044 : 8095;
-		default: THROW_EXCEPTION(0, "ERROR: Unsupported version provided.\n")
+		default: THROW_EXCEPTION(0, "ERROR: Unsupported version provided.\n");
 	}
 }
 
@@ -28,7 +28,7 @@ __device__ constexpr int biomeToCubiomesBiome(const Biome biome) {
 		case Biome::Forest: return BiomeID::forest;
 		case Biome::Birch_Forest: return BiomeID::birch_forest;
 		case static_cast<Biome>(ExperimentalBiome::Taiga): return BiomeID::taiga;
-		default: THROW_EXCEPTION(BiomeID::none, "ERROR: Unsupported biome provided.\n")
+		default: THROW_EXCEPTION(BiomeID::none, "ERROR: Unsupported biome provided.\n");
 	}
 }
 
@@ -40,7 +40,8 @@ __device__ constexpr int versionToCubiomesVersion(const Version version) {
 		case Version::v1_14_4: return MCVersion::MC_1_14_4;
 		case Version::v1_16_1: return MCVersion::MC_1_16_1;
 		case Version::v1_16_4: return MCVersion::MC_1_16_5;
-		default: THROW_EXCEPTION(MCVersion::MC_UNDEF, "ERROR: Unsupported version provided.\n")
+		case static_cast<Version>(ExperimentalVersion::v1_17_1): return MCVersion::MC_1_17_1;
+		default: THROW_EXCEPTION(MCVersion::MC_UNDEF, "ERROR: Unsupported version provided.\n");
 	}
 }
 
@@ -53,7 +54,7 @@ __host__ __device__ constexpr double getBiomeRarity(const Biome biome, const Ver
 				case Biome::Birch_Forest: return 0.;
 				case Biome::Forest: return 0.0883953;
 				case static_cast<Biome>(ExperimentalBiome::Taiga): return 0.0843568;
-				default: THROW_EXCEPTION(0., "ERROR: Unsupported biome provided.\n")
+				default: THROW_EXCEPTION(0., "ERROR: Unsupported biome provided.\n");
 			}
 		case static_cast<Version>(ExperimentalVersion::v1_8_9):
 		case static_cast<Version>(ExperimentalVersion::v1_12_2):
@@ -61,14 +62,14 @@ __host__ __device__ constexpr double getBiomeRarity(const Biome biome, const Ver
 				case Biome::Birch_Forest: return 0.0269248;
 				case Biome::Forest: return 0.0904358;
 				case static_cast<Biome>(ExperimentalBiome::Taiga): return 0.0385804;
-				default: THROW_EXCEPTION(0., "ERROR: Unsupported biome provided.\n")
+				default: THROW_EXCEPTION(0., "ERROR: Unsupported biome provided.\n");
 			}
 		case Version::v1_14_4:
 			switch (biome) {
 				case Biome::Birch_Forest: return 0.0269201;
 				case Biome::Forest: return 0.0904048;
 				case static_cast<Biome>(ExperimentalBiome::Taiga): return 0.0385741;
-				default: THROW_EXCEPTION(0., "ERROR: Unsupported biome provided.\n")
+				default: THROW_EXCEPTION(0., "ERROR: Unsupported biome provided.\n");
 			}
 		case Version::v1_16_1:
 		case Version::v1_16_4:
@@ -76,9 +77,10 @@ __host__ __device__ constexpr double getBiomeRarity(const Biome biome, const Ver
 				case Biome::Birch_Forest: return 0.0259779;
 				case Biome::Forest: return 0.0870516;
 				case static_cast<Biome>(ExperimentalBiome::Taiga): return 0.0372210;
-				default: THROW_EXCEPTION(0., "ERROR: Unsupported biome provided.\n")
+				default: THROW_EXCEPTION(0., "ERROR: Unsupported biome provided.\n");
 			}
-		default: THROW_EXCEPTION(0., "ERROR: Unsupported version provided.\n")
+		// TODO: Derive for 1.17.1
+		default: THROW_EXCEPTION(0., "ERROR: Unsupported version provided.\n");
 	}
 }
 

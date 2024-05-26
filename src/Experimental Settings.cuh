@@ -17,10 +17,10 @@ enum class ExperimentalBiome {
    Taiga = 2
 };
 enum class ExperimentalVersion {
-   v1_6_4, v1_8_9, v1_12_2, v1_17_1 = static_cast<int>(Version::AUTO) + 1
+   v1_6_4, v1_8_9, v1_12_2, v1_17_1 = 6
 };
 enum class ExperimentalTreeType {
-   Pine = static_cast<int>(TreeType::AUTO) + 1, Spruce
+   Pine = 4, Spruce
 };
 enum class PrintSetting {
    None, RandomAndTextOnly, All,

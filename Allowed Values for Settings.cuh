@@ -1,7 +1,7 @@
 #ifndef __ALLOWED_VALUES_FOR_SETTINGS_CUH
 #define __ALLOWED_VALUES_FOR_SETTINGS_CUH
 
-#include "Experimental Settings.cuh"
+#include "src/Experimental Settings.cuh"
 #include <array>
 
 // The list of supported versions.
@@ -91,7 +91,7 @@ struct InputData {
 			PossibleRadiiRange spruceLeavesWidestRadius, topmostLeavesRadius;
 		};
 	};
-
+	// TODO: Have AUTO/Unknown TreeType replaced with exact tree type if specified biome only contains one type of tree
 	// Unknown tree/Generic constructor, trunkHeight unknown
 	constexpr InputData(const Version version, const TreeType treeType, const Coordinate &coordinate, const Biome biome) noexcept :
 		version(version),

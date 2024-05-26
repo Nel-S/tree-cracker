@@ -111,6 +111,7 @@ __device__ constexpr InputData INPUT_DATA[] = {
 #include "Test Data/1.14.4.cuh"
 #include "Test Data/1.16.1.cuh"
 #include "Test Data/1.16.4.cuh"
+#include "Test Data/1.17.1.cuh"
 /* To do that, comment out all of the INPUT_DATA code above, and uncomment and modify the line below.*/
 // #define INPUT_DATA TEST_DATA_16_4_1
 

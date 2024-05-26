@@ -47,7 +47,7 @@ __device__ constexpr uint64_t getTreeSalt(const Biome biome, const Version versi
 				case Biome::Birch_Forest:
 				case static_cast<Biome>(ExperimentalBiome::Taiga):
 					return 60001;
-				default: THROW_EXCEPTION(0, "ERROR: Unsupported biome provided.")
+				default: THROW_EXCEPTION(0, "ERROR: Unsupported biome provided.");
 			}
 		case Version::v1_16_1:
 		case Version::v1_16_4:
@@ -56,7 +56,7 @@ __device__ constexpr uint64_t getTreeSalt(const Biome biome, const Version versi
 				case Biome::Birch_Forest:
 				case static_cast<Biome>(ExperimentalBiome::Taiga):
 					return 80001;
-				default: THROW_EXCEPTION(0, "ERROR: Unsupported biome provided.")
+				default: THROW_EXCEPTION(0, "ERROR: Unsupported biome provided.");
 			}
 		case static_cast<Version>(ExperimentalVersion::v1_17_1): // Or 1.17.0, I'm not sure
 			switch (biome) {
@@ -64,9 +64,9 @@ __device__ constexpr uint64_t getTreeSalt(const Biome biome, const Version versi
 				case Biome::Birch_Forest:
 				case static_cast<Biome>(ExperimentalBiome::Taiga):
 					return 80002;
-				default: THROW_EXCEPTION(0, "ERROR: Unsupported biome provided.")
+				default: THROW_EXCEPTION(0, "ERROR: Unsupported biome provided.");
 			}
-		default: THROW_EXCEPTION(0, "ERROR: Unsupported version provided.")
+		default: THROW_EXCEPTION(0, "ERROR: Unsupported version provided.");
 	}
 }
 
@@ -107,7 +107,7 @@ __device__ constexpr bool biomeContainsTreeType(const Biome biome, const TreeTyp
 			return treeType == TreeType::Birch;
 		case static_cast<Biome>(ExperimentalBiome::Taiga):
 			return treeType == static_cast<TreeType>(ExperimentalTreeType::Pine) || treeType == static_cast<TreeType>(ExperimentalTreeType::Spruce);
-		default: THROW_EXCEPTION(false, "ERROR: Unsupported biome provided.\n")
+		default: THROW_EXCEPTION(false, "ERROR: Unsupported biome provided.\n");
 	}
 }
 
@@ -136,7 +136,7 @@ __host__ __device__ TreeType getNextTreeType(Random &random, const Biome biome, 
 		case static_cast<Biome>(ExperimentalBiome::Taiga):
 			if (!random.nextInt(3)) return static_cast<TreeType>(ExperimentalTreeType::Pine);
 			return static_cast<TreeType>(ExperimentalTreeType::Spruce);
-		default: THROW_EXCEPTION(TreeType::Unknown, "ERROR: Unsupported biome provided.\n")
+		default: THROW_EXCEPTION(TreeType::Unknown, "ERROR: Unsupported biome provided.\n");
 	}
 }
 
@@ -148,7 +148,7 @@ __host__ __device__ constexpr int32_t biomeMinTreeCount(const Biome biome, const
 		case Biome::Birch_Forest:
 		case static_cast<Biome>(ExperimentalBiome::Taiga):
 			return 10;
-		default: THROW_EXCEPTION(INT32_MIN, "ERROR: Unsupported biome provided.\n")
+		default: THROW_EXCEPTION(INT32_MIN, "ERROR: Unsupported biome provided.\n");
 	}
 }
 
@@ -188,7 +188,7 @@ __device__ constexpr int32_t biomeMaxRandomCalls(const Biome biome, const Versio
 			return biomeMaxTreeCount(biome, version) * 19;
 		case static_cast<Biome>(ExperimentalBiome::Taiga):
 			return biomeMaxTreeCount(biome, version) * 8;
-		default: THROW_EXCEPTION(0, "ERROR: Unsupported biome provided.\n")
+		default: THROW_EXCEPTION(0, "ERROR: Unsupported biome provided.\n");
 	}
 }
 
@@ -204,7 +204,7 @@ struct SetOfLeafStates {
 	__device__ constexpr SetOfLeafStates(const LeafState leafStates[NUMBER_OF_LEAF_POSITIONS], const Version version) : mask(0) {
 		// Make sure all leaf states were given a valid value
 		for (size_t i = 0; i < NUMBER_OF_LEAF_POSITIONS; i++) {
-			if (leafStates[i] < LeafState::LeafWasNotPlaced || LeafState::Unknown < leafStates[i]) THROW_EXCEPTION(/*None*/, "ERROR: Invalid leafstate in index" + std::to_string(i) + ".\n")
+			if (leafStates[i] < LeafState::LeafWasNotPlaced || LeafState::Unknown < leafStates[i]) THROW_EXCEPTION(/*None*/, "ERROR: Invalid leafstate in index" + std::to_string(i) + ".\n");
 		}
 		for (int32_t y = 0; y < 3; y++) {
 			for (int32_t xz = 0; xz < 4; xz++) {
@@ -645,7 +645,7 @@ struct TreeChunkPosition {
 			case TreeType::Birch:     return this->birchAttributes.canBeGeneratedBy(random, version);
 			case static_cast<TreeType>(ExperimentalTreeType::Pine):      return this->pineAttributes.canBeGeneratedBy(random, version);
 			case static_cast<TreeType>(ExperimentalTreeType::Spruce):    return this->spruceAttributes.canBeGeneratedBy(random, version);
-			default: THROW_EXCEPTION(false, "ERROR: Unsupported tree type provided.\n")
+			default: THROW_EXCEPTION(false, "ERROR: Unsupported tree type provided.\n");
 		}
 	}
 
@@ -727,7 +727,7 @@ struct TreeChunkPosition {
 			case static_cast<TreeType>(ExperimentalTreeType::Spruce):
 				SpruceAttributes::skip(random, isValidIngamePosition, version);
 				break;
-			default: THROW_EXCEPTION(/*None*/, "ERROR: Unsupported tree type provided.\n")
+			default: THROW_EXCEPTION(/*None*/, "ERROR: Unsupported tree type provided.\n");
 		}
 	}
 };
@@ -779,22 +779,22 @@ struct TreeChunk {
 		{}
 
 	__device__ constexpr TreeChunkPosition &createNewTree(const int32_t x, const int32_t z, const TreeType treeType) {
-		if (!biomeContainsTreeType(this->biome, treeType, this->version)) THROW_EXCEPTION(this->treePositions[sizeof(this->treePositions)/sizeof(*this->treePositions) - 1], "ERROR: The specified tree type cannot generate under the TreeChunk's set biome and version.\n") // Invalid tree type for the given biome
+		if (!biomeContainsTreeType(this->biome, treeType, this->version)) THROW_EXCEPTION(this->treePositions[sizeof(this->treePositions)/sizeof(*this->treePositions) - 1], "ERROR: The specified tree type cannot generate under the TreeChunk's set biome and version.\n"); // Invalid tree type for the given biome
 
 		uint32_t populationChunkX = getPopulationChunkCoordinate(x, version);
 		uint32_t populationChunkZ = getPopulationChunkCoordinate(z, version);
 		if (!this->numberOfTreePositions) {
 			this->populationChunkX = populationChunkX;
 			this->populationChunkZ = populationChunkZ;
-		} else if (populationChunkX != this->populationChunkX || populationChunkZ != this->populationChunkZ) THROW_EXCEPTION(this->treePositions[sizeof(this->treePositions)/sizeof(*this->treePositions) - 1], "ERROR: The new tree does not fall within the specified tree trunk.\n")
+		} else if (populationChunkX != this->populationChunkX || populationChunkZ != this->populationChunkZ) THROW_EXCEPTION(this->treePositions[sizeof(this->treePositions)/sizeof(*this->treePositions) - 1], "ERROR: The new tree does not fall within the specified tree trunk.\n");
 		uint32_t populationChunkXOffset = getOffsetWithinPopulationChunk(x, version);
 		uint32_t populationChunkZOffset = getOffsetWithinPopulationChunk(z, version);
 
 		for (uint32_t i = 0; i < this->numberOfTreePositions; i++) {
 			TreeChunkPosition &tree = this->treePositions[i];
 			if (tree.populationChunkXOffset == populationChunkXOffset && tree.populationChunkZOffset == populationChunkZOffset) {
-				if (treeType == TreeType::Unknown) THROW_EXCEPTION(this->treePositions[sizeof(this->treePositions)/sizeof(*this->treePositions) - 1], "ERROR: A tree with known type cannot be superseded with a tree of unknown type.\n")
-				if (tree.possibleTreeTypes.contains(treeType)) THROW_EXCEPTION(this->treePositions[sizeof(this->treePositions)/sizeof(*this->treePositions) - 1], "ERROR: Encountered a duplicate tree with duplicate coordinates, biome, version, and type.\n")
+				if (treeType == TreeType::Unknown) THROW_EXCEPTION(this->treePositions[sizeof(this->treePositions)/sizeof(*this->treePositions) - 1], "ERROR: A tree with known type cannot be superseded with a tree of unknown type.\n");
+				if (tree.possibleTreeTypes.contains(treeType)) THROW_EXCEPTION(this->treePositions[sizeof(this->treePositions)/sizeof(*this->treePositions) - 1], "ERROR: Encountered a duplicate tree with duplicate coordinates, biome, version, and type.\n");
 				tree.possibleTreeTypes.add(treeType);
 				return tree;
 			}
@@ -828,7 +828,7 @@ struct TreeChunk {
 			case TreeType::Unknown:
 				this->createNewTree(treeData.coordinate.x, treeData.coordinate.z, TreeType::Unknown);
 				break;
-			default: THROW_EXCEPTION(/*None*/, "ERROR: Unsupported tree type provided.\n")
+			default: THROW_EXCEPTION(/*None*/, "ERROR: Unsupported tree type provided.\n");
 		}
 	}
 
