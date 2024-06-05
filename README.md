@@ -74,7 +74,7 @@ I would like to give very large Thank You's to
 - [Neil](https://github.com/hube12), for finding and listing most tree salts ([1.13](https://gist.github.com/hube12/574512a3c4df2be8ba6c08e7298caedd), [1.14](https://gist.github.com/hube12/394ddf11b3cdcc9504270777565446e4), [1.15](https://gist.github.com/hube12/821b66615a97a7130ef804603d68bec8), [1.16](https://gist.github.com/hube12/b65500cd234ce2a3983b62b3903c183d), [1.17](https://gist.github.com/hube12/5066fbcd8565648dd68113a9b065514b)).
 - [Chaos4669](https://youtube.com/@Chaotic4669), for providing test data and recommendations on what could benefit from clarification.
 - [Cubitect](https://github.com/cubitect), for his [Cubiomes library](https://github.com/Cubitect/cubiomes) that this program (will ultimately) use a port of to filter biomes.
-- [Panda4994](https://github.com/panda4994), for [his algorithm]((https://github.com/Panda4994/panda4994.github.io/blob/48526d35d3d38750102b9f360dff45a4bdbc50bd/seedinfo/js/Random.js#L16)) to determine if a state is derivable from a nextLong call. -->
+- [Panda4994](https://github.com/panda4994), for [his algorithm]((https://github.com/Panda4994/panda4994.github.io/blob/48526d35d3d38750102b9f360dff45a4bdbc50bd/seedinfo/js/Random.js#L16)) to determine if a state is derivable from a nextLong call.
 
 If you would like to contribute to this repository or report any bugs, please feel free to open an issue or a pull request.
 
