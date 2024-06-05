@@ -60,7 +60,7 @@ __device__ constexpr InputData TEST_DATA_6_4_1[] = {
 	},
 	{
 		static_cast<Version>(ExperimentalVersion::v1_6_4), // (Should be 1.6.4- or 1.12.2+.)
-		TreeType::Large_Oak,
+		TreeType::Fancy_Oak,
 		Coordinate(1596, 387),
 		Biome::Forest,       // (Should be Forest.)
 		PossibleHeightsRange(), // The height of the tree's trunk (i.e. the number of logs it has). (Should be in the range [3,14].)

@@ -14,7 +14,7 @@ __host__ __device__ constexpr const char *getPlural(const int32_t val) noexcept 
 __host__ __device__ constexpr const char *toString(const Biome biome) {
 	switch (biome) {
 		case Biome::Forest: return "Forest";
-		case Biome::Birch_Forest: return "Birch Forest";
+		case static_cast<Biome>(ExperimentalBiome::Birch_Forest): return "Birch Forest";
 		case static_cast<Biome>(ExperimentalBiome::Taiga): return "Taiga";
 		default: THROW_EXCEPTION("", "ERROR: Unsupported biome provided.\n");
 	}
@@ -29,7 +29,7 @@ __host__ __device__ constexpr const char *toString(const Version version) {
 		case Version::v1_14_4: return "1.14.4";
 		case Version::v1_16_1: return "1.16.1";
 		case Version::v1_16_4: return "1.16.4";
-		case static_cast<Version>(ExperimentalVersion::v1_17_1): return "1.17.1";
+		case Version::v1_17_1: return "1.17.1";
 		default: THROW_EXCEPTION("", "ERROR: Unsupported version provided.\n");
 	}
 }
@@ -67,7 +67,7 @@ __host__ __device__ constexpr const char *toString(const LeafState leafState) {
 __host__ __device__ constexpr const char *toString(const TreeType treetype) {
 	switch (treetype) {
 		case TreeType::Oak: return "Oak";
-		case TreeType::Large_Oak: return "Large Oak";
+		case TreeType::Fancy_Oak: return "Fancy Oak";
 		case TreeType::Birch: return "Birch";
 		case static_cast<TreeType>(ExperimentalTreeType::Pine): return "Pine";
 		case static_cast<TreeType>(ExperimentalTreeType::Spruce): return "Spruce";
@@ -75,6 +75,8 @@ __host__ __device__ constexpr const char *toString(const TreeType treetype) {
 		default: THROW_EXCEPTION("", "ERROR: Unsupported tree type provided.\n");
 	}
 }
+
+// TODO: toString for OutputType
 
 
 // TODO: Replace copies of treechunks with pointers to INPUT_DATA so it's not so large?
@@ -228,10 +230,10 @@ struct SetOfTreeChunks {
 					std::fprintf(stderr, "\t\t\tTrunk height range: [%" PRId32 ", %" PRId32 "]\n", this->treeChunks[i].treePositions[j].oakAttributes.trunkHeight.lowerBound, this->treeChunks[i].treePositions[j].oakAttributes.trunkHeight.upperBound);
 					std::fprintf(stderr, "\t\t\tLeaf states: %" PRIu32 " corner leaves placed, %" PRIu32 " total corner leaf states known\n", getNumberOfOnesIn(this->treeChunks[i].treePositions[j].oakAttributes.leafStates.mask & 0x0000ffff), getNumberOfOnesIn(this->treeChunks[i].treePositions[j].oakAttributes.leafStates.mask & 0xffff0000));
 				}
-				if (this->treeChunks[i].treePositions[j].possibleTreeTypes.contains(TreeType::Large_Oak)) {
-					// Individual Large Oak data
-					std::fprintf(stderr, "\t\tLarge Oak: (%.2f bits)\n", this->treeChunks[i].treePositions[j].largeOakAttributes.getEstimatedBits());
-					std::fprintf(stderr, "\t\t\tTrunk height range: [%" PRId32 ", %" PRId32 "]\n", this->treeChunks[i].treePositions[j].largeOakAttributes.trunkHeight.lowerBound, this->treeChunks[i].treePositions[j].largeOakAttributes.trunkHeight.upperBound);
+				if (this->treeChunks[i].treePositions[j].possibleTreeTypes.contains(TreeType::Fancy_Oak)) {
+					// Individual Fancy Oak data
+					std::fprintf(stderr, "\t\tFancy Oak: (%.2f bits)\n", this->treeChunks[i].treePositions[j].fancyOakAttributes.getEstimatedBits());
+					std::fprintf(stderr, "\t\t\tTrunk height range: [%" PRId32 ", %" PRId32 "]\n", this->treeChunks[i].treePositions[j].fancyOakAttributes.trunkHeight.lowerBound, this->treeChunks[i].treePositions[j].fancyOakAttributes.trunkHeight.upperBound);
 				}
 				if (this->treeChunks[i].treePositions[j].possibleTreeTypes.contains(TreeType::Birch)) {
 					// Individual Birch data
@@ -290,12 +292,23 @@ struct SetOfTreeChunks {
 // __device__ constexpr SetOfTreeChunks ABSOLUTE_POPULATION_CHUNKS_DATA = RELATIVE_POPULATION_CHUNKS_DATA.possibleSetsOfTreeChunks[0];
 __device__ constexpr SetOfTreeChunks ABSOLUTE_POPULATION_CHUNKS_DATA(INPUT_DATA, sizeof(INPUT_DATA)/sizeof(*INPUT_DATA));
 
-struct Stage2Results {
+struct Tuple {
 	uint64_t structureSeedIndex, treechunkSeed;
 };
+// constexpr Position VECTOR_1 = {24667315./16., -4824621./16.};
+// constexpr Position VECTOR_2 = {18218081./16., 7847617./16.};
+// constexpr Position PARALLELOGRAM_LOWEST_CORNER = {constexprMin(constexprMin(0., VECTOR_1.x), constexprMin(VECTOR_2.x, VECTOR_1.x + VECTOR_2.x)), constexprMin(constexprMin(0., VECTOR_1.z), constexprMin(VECTOR_2.z, VECTOR_1.z + VECTOR_2.z))};
+// constexpr Position PARALLELOGRAM_HIGHEST_CORNER = {constexprMax(constexprMax(0., VECTOR_1.x), constexprMax(VECTOR_2.x, VECTOR_1.x + VECTOR_2.x)), constexprMax(constexprMax(0., VECTOR_1.z), constexprMax(VECTOR_2.z, VECTOR_1.z + VECTOR_2.z))};
+// constexpr Coordinate PARALLELOGRAM_SIZE = {constexprCeil(PARALLELOGRAM_HIGHEST_CORNER.x - PARALLELOGRAM_LOWEST_CORNER.x + 1 - VECTOR_2.x), constexprCeil(PARALLELOGRAM_HIGHEST_CORNER.z - PARALLELOGRAM_LOWEST_CORNER.z + 1)};
+
 
 // TODO: Replace CUDA_IS_PRESENT preprocessor directives with ACTUAL_DEVICE
 constexpr Device ACTUAL_DEVICE = CUDA_IS_PRESENT ? DEVICE : Device::CPU;
+
+// Bitmask of all valid Print Setting flags
+// constexpr int32_t PRINT_SETTINGS_MASK = 2*static_cast<int32_t>(ExperimentalOutputType::All_Worldseeds) - 1;
+constexpr int32_t PRINT_SETTINGS_MASK = 2*static_cast<int32_t>(OutputType::Structure_Seeds) - 1;
+constexpr OutputType ACTUAL_TYPES_TO_OUTPUT = static_cast<int32_t>(TYPES_TO_OUTPUT) & PRINT_SETTINGS_MASK ? static_cast<OutputType>(static_cast<int32_t>(TYPES_TO_OUTPUT) & PRINT_SETTINGS_MASK) : OutputType::AUTO;
 
 constexpr uint64_t ACTUAL_NUMBER_OF_PARTIAL_RUNS = NUMBER_OF_PARTIAL_RUNS == static_cast<uint64_t>(AUTO) ? UINT64_C(1) : constexprMax(NUMBER_OF_PARTIAL_RUNS, UINT64_C(1));
 constexpr uint64_t ACTUAL_PARTIAL_RUN_TO_BEGIN_FROM = PARTIAL_RUN_TO_BEGIN_FROM == static_cast<uint64_t>(AUTO) ? UINT64_C(1) : constexprMin(constexprMax(PARTIAL_RUN_TO_BEGIN_FROM, UINT64_C(1)), NUMBER_OF_PARTIAL_RUNS);
@@ -310,14 +323,15 @@ constexpr uint64_t ACTUAL_WORKERS_PER_BLOCK = constexprMin(WORKERS_PER_BLOCK, NU
 /* There are 2^48 possible internal Random states.
    If RELATIVE_COORDINATES_MODE is false, the first four bits of it directly correspond to the first tree's x-offset within the population chunk, so that limits the possibilities to 2^44.*/
 constexpr uint64_t TOTAL_NUMBER_OF_STATES_TO_CHECK = UINT64_C(1) << (44 + 4*static_cast<int32_t>(RELATIVE_COORDINATES_MODE));
+// constexpr uint64_t TOTAL_NUMBER_OF_STATES_TO_CHECK = RELATIVE_COORDINATES_MODE ? UINT64_C(1) << 48 : static_cast<uint64_t>(PARALLELOGRAM_SIZE.x) * PARALLELOGRAM_SIZE.z;
 /* One one hand, the first filter finds all internal states that can generate the tree with the most number of bits of information.
    Therefore for a tree with k bits of information, we can expect there to be around 2^(48 - k) results, or 2^(48 - k)/ACTUAL_NUMBER_OF_PARTIAL_RUNS results per run.
    On the other hand, during each iteration we're only actually analyzing at most NUMBER_OF_WORKERS*(getHighestMaxCalls() + 1)*(1 << getHighestMaxTreeCount()) entries.
    Therefore the expected number of results we'll need space for is simply the minimum of those two expressions, which is then doubled to provide some leeway just in case.
    (Note: this does not currently take into account the fact that 65536 worldseeds correspond to each ultimate structure seed, since then we'd need to make this 65536x larger and I suspect the structure seeds will be filtered enough to render that unnecessary.)*/
 constexpr uint64_t RECOMMENDED_RESULTS_PER_RUN = 2*constexprMin((UINT64_C(1) << (48 - static_cast<uint32_t>(ABSOLUTE_POPULATION_CHUNKS_DATA.treeChunks[0].treePositions[0].getEstimatedBits(ABSOLUTE_POPULATION_CHUNKS_DATA.treeChunks[0].biome, ABSOLUTE_POPULATION_CHUNKS_DATA.treeChunks[0].version) - 0.5)))/ACTUAL_NUMBER_OF_PARTIAL_RUNS, NUMBER_OF_WORKERS*(ABSOLUTE_POPULATION_CHUNKS_DATA.getHighestMaxCalls() + 1)*(UINT64_C(1) << ABSOLUTE_POPULATION_CHUNKS_DATA.getHighestMaxTreeCount()));
-// NVCC error C2148 places a hard limit of 0x7fffffff bytes per array, while the largest-information array we'll be using is Stage2Results.
-constexpr uint64_t MOST_POSSIBLE_RESULTS_PER_RUN = constexprMin(static_cast<uint64_t>(constexprCeil(static_cast<double>(TOTAL_NUMBER_OF_STATES_TO_CHECK)/static_cast<double>(ACTUAL_NUMBER_OF_PARTIAL_RUNS))), 0x7fffffff/sizeof(Stage2Results));
+// NVCC error C2148 places a hard limit of 0x7fffffff bytes per array, while the largest-information array we'll be using is Tuple.
+constexpr uint64_t MOST_POSSIBLE_RESULTS_PER_RUN = constexprMin(static_cast<uint64_t>(constexprCeil(static_cast<double>(TOTAL_NUMBER_OF_STATES_TO_CHECK)/static_cast<double>(ACTUAL_NUMBER_OF_PARTIAL_RUNS))), 0x7fffffff/sizeof(Tuple));
 constexpr uint64_t ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN = constexprMin(MAX_NUMBER_OF_RESULTS_PER_RUN ? MAX_NUMBER_OF_RESULTS_PER_RUN : RECOMMENDED_RESULTS_PER_RUN, MOST_POSSIBLE_RESULTS_PER_RUN);
 
 
@@ -327,11 +341,11 @@ struct ThreadData {
 };
 #endif
 
+// TODO: How much slower would the program run if Tuple storages were used for everything?
 __managed__ uint64_t filterStorageA[ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN];
-// __device__ uint64_t filterStorageB[ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN]; // To prevent new results from accidentally erasing the old inputs mid-filter
 __device__ uint64_t filterStorageB[ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN]; // To prevent new results from accidentally erasing the old inputs mid-filter
-__device__ Stage2Results filterDoubleStorageA[ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN];
-__device__ Stage2Results filterDoubleStorageB[ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN]; // To prevent new results from accidentally erasing the old inputs mid-filter
+__device__ Tuple filterDoubleStorageA[ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN];
+__device__ Tuple filterDoubleStorageB[ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN]; // To prevent new results from accidentally erasing the old inputs mid-filter
 
 void printSettingsAndDataWarnings() noexcept {
 	if (SILENT_MODE) return;
@@ -344,6 +358,9 @@ void printSettingsAndDataWarnings() noexcept {
 
 	if (MAX_NUMBER_OF_RESULTS_PER_RUN == static_cast<uint64_t>(Setting::AUTO)) std::fprintf(stderr, "NOTE: MAX_NUMBER_OF_RESULTS_PER_RUN was marked as AUTO; it was ultimately set as %" PRIu64 ".\n", ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN);
 	else if (MAX_NUMBER_OF_RESULTS_PER_RUN != ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN) std::fprintf(stderr, "WARNING: MAX_NUMBER_OF_RESULTS_PER_RUN (%" PRIu64 ") cannot be larger than the maximum number of possible results (%" PRIu64 "), and so was truncated to %" PRIu64 ".\n", MAX_NUMBER_OF_RESULTS_PER_RUN, MOST_POSSIBLE_RESULTS_PER_RUN, ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN);
+
+	// TODO: Print TYPES_TO_OUTPUT and ACTUAL_TYPES_TO_OUTPUT once toString(OutputType) is implemented
+	if (TYPES_TO_OUTPUT != ACTUAL_TYPES_TO_OUTPUT) std::fprintf(stderr, "WARNING: TYPES_TO_OUTPUT did not have any print settings listed, and so was reset to AUTO.");
 
 	constexpr double inputDataBits = ABSOLUTE_POPULATION_CHUNKS_DATA.getEstimatedBits();
 
@@ -358,7 +375,7 @@ void printSettingsAndDataWarnings() noexcept {
 		else std::fprintf(stderr, "NOTE: Filtering solely based on treechunks present in versions 1.12 or earlier may result in tens of thousands of structure seeds. Other treechunks will be used to narrow down the results, but one should still prepare for that worst-case possibility.\n");
 	}
 
-	printf("\n");
+	std::fprintf(stderr, "\n");
 }
 
 #endif

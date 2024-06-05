@@ -3,16 +3,17 @@
 
 #include "../Allowed Values for Settings.cuh"
 
-// Worldseed: 183641714761759341 (and 106 others)
-// Structure seed: 120029946411629 or 169058901733005
+// Worldseed: 123456789
+// Structure seed: 123456789
 // Treechunk seed: ??
+// TODO: UNVERIFIED
 __device__ constexpr InputData TEST_DATA_16_4_1[] = {
     {
 		Version::v1_16_4,
-		TreeType::Oak,
-		Coordinate(-64, -178),
+		TreeType::Birch,
+		Coordinate(4, -22),
 		Biome::Forest,    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
-		PossibleHeightsRange(5), // The height of the tree's trunk (i.e. the number of logs it has). (Should be in the range [4,6] for Oak or [5,7] for Birch.)
+		PossibleHeightsRange(6), // The height of the tree's trunk (i.e. the number of logs it has). (Should be in the range [4,6] for Oak or [5,7] for Birch.)
 
 		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
 			// Lowest y-level:
@@ -109,7 +110,7 @@ __device__ constexpr InputData TEST_DATA_16_4_1[] = {
 	},
 	{
 		Version::v1_16_4, // (Should be 1.6.4- or 1.12.2+.)
-		TreeType::Large_Oak,
+		TreeType::Fancy_Oak,
 		Coordinate(-50, -188),
 		Biome::Forest,       // (Should be Forest.)
 		PossibleHeightsRange(3, PossibleHeightsRange::NO_MAXIMUM), // The height of the tree's trunk (i.e. the number of logs it has). (Should be in the range [3,14].)
@@ -301,7 +302,7 @@ __device__ constexpr InputData TEST_DATA_16_4_1[] = {
 	},
 	{
 		Version::v1_16_4, // (Should be 1.6.4- or 1.12.2+.)
-		TreeType::Large_Oak,
+		TreeType::Fancy_Oak,
 		Coordinate(-77, -37),
 		Biome::Forest,       // (Should be Forest.)
 		PossibleHeightsRange(), // The height of the tree's trunk (i.e. the number of logs it has). (Should be in the range [3,14].)
@@ -434,15 +435,15 @@ __device__ constexpr InputData TEST_DATA_16_4_1[] = {
 };
 
 
-// Worldseed: 183641714761759341
-// Structure seed: 120029946411629
+// Worldseed: ??
+// Structure seed: ??
 // Treechunk seed: ??
 __device__ constexpr InputData TEST_DATA_16_4_2[] = {
     {
 		Version::v1_16_4,
 		TreeType::Birch,
 		Coordinate(-40, 254),
-		Biome::Birch_Forest,    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
+		static_cast<Biome>(ExperimentalBiome::Birch_Forest),    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
 		PossibleHeightsRange(5), // The height of the tree's trunk (i.e. the number of logs it has). (Should be in the range [4,6] for Oak or [5,7] for Birch.)
 
 		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
@@ -467,7 +468,7 @@ __device__ constexpr InputData TEST_DATA_16_4_2[] = {
 		Version::v1_16_4,
 		TreeType::Birch,
 		Coordinate(-40, 249),
-		Biome::Birch_Forest,    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
+		static_cast<Biome>(ExperimentalBiome::Birch_Forest),    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
 		PossibleHeightsRange(7), // The height of the tree's trunk (i.e. the number of logs it has). (Should be in the range [4,6] for Oak or [5,7] for Birch.)
 
 		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
@@ -492,7 +493,7 @@ __device__ constexpr InputData TEST_DATA_16_4_2[] = {
 		Version::v1_16_4,
 		TreeType::Birch,
 		Coordinate(-35, 246),
-		Biome::Birch_Forest,    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
+		static_cast<Biome>(ExperimentalBiome::Birch_Forest),    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
 		PossibleHeightsRange(7), // The height of the tree's trunk (i.e. the number of logs it has). (Should be in the range [4,6] for Oak or [5,7] for Birch.)
 
 		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
@@ -517,7 +518,7 @@ __device__ constexpr InputData TEST_DATA_16_4_2[] = {
 		Version::v1_16_4,
 		TreeType::Birch,
 		Coordinate(-34, 251),
-		Biome::Birch_Forest,    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
+		static_cast<Biome>(ExperimentalBiome::Birch_Forest),    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
 		PossibleHeightsRange(7), // The height of the tree's trunk (i.e. the number of logs it has). (Should be in the range [4,6] for Oak or [5,7] for Birch.)
 
 		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
@@ -542,7 +543,7 @@ __device__ constexpr InputData TEST_DATA_16_4_2[] = {
 		Version::v1_16_4,
 		TreeType::Birch,
 		Coordinate(-31, 251),
-		Biome::Birch_Forest,    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
+		static_cast<Biome>(ExperimentalBiome::Birch_Forest),    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
 		PossibleHeightsRange(7), // The height of the tree's trunk (i.e. the number of logs it has). (Should be in the range [4,6] for Oak or [5,7] for Birch.)
 
 		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
@@ -650,6 +651,220 @@ __device__ constexpr InputData TEST_DATA_16_4_3[] = {
 		PossibleRadiiRange(2),   // The radius of the widest layer of leaves, excluding the center column where the tree's trunk is. (Should be in the range [2,3].)
 		PossibleRadiiRange(1)    // The radius of the topmost layer of leaves, excluding the center column where the tree's trunk is. (Should be in the range [0,1].)
 	},
+};
+
+// Worldseed: 123456789
+// Structure seed: 123456789
+// Treechunk seed: 236018519516789(?)
+// VERIFIED
+__device__ constexpr InputData TEST_DATA_16_4_4[] = {
+	{
+		Version::v1_16_4,
+		TreeType::Oak,
+		Coordinate(-354, -559),
+		Biome::Forest,    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
+		PossibleHeightsRange(6), // The height of the tree's trunk (i.e. the number of logs it has). (Should be in the range [4,6] for Oak or [5,7] for Birch.)
+
+		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
+			// Lowest y-level:
+			LeafState::LeafWasPlaced, // Northwest
+			LeafState::LeafWasPlaced, // Southwest
+			LeafState::LeafWasPlaced, // Northeast
+			LeafState::LeafWasPlaced, // Southeast
+			// Middle y-level:
+			LeafState::LeafWasPlaced, // Northwest
+			LeafState::LeafWasPlaced, // Southwest
+			LeafState::LeafWasNotPlaced, // Northeast
+			LeafState::LeafWasNotPlaced, // Southeast
+			// Highest y-level:
+			LeafState::LeafWasPlaced, // Northwest
+			LeafState::LeafWasNotPlaced, // Southwest
+			LeafState::LeafWasNotPlaced, // Northeast
+			LeafState::LeafWasPlaced  // Southeast
+		})
+	},
+	{
+		Version::v1_16_4,
+		TreeType::Oak,
+		Coordinate(-354, -555),
+		Biome::Forest,    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
+		PossibleHeightsRange(4), // The height of the tree's trunk (i.e. the number of logs it has). (Should be in the range [4,6] for Oak or [5,7] for Birch.)
+
+		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
+			// Lowest y-level:
+			LeafState::LeafWasNotPlaced, // Northwest
+			LeafState::LeafWasNotPlaced, // Southwest
+			LeafState::Unknown, // Northeast
+			LeafState::LeafWasNotPlaced, // Southeast
+			// Middle y-level:
+			LeafState::LeafWasNotPlaced, // Northwest
+			LeafState::LeafWasPlaced, // Southwest
+			LeafState::LeafWasNotPlaced, // Northeast
+			LeafState::LeafWasPlaced, // Southeast
+			// Highest y-level:
+			LeafState::LeafWasNotPlaced, // Northwest
+			LeafState::LeafWasNotPlaced, // Southwest
+			LeafState::LeafWasNotPlaced, // Northeast
+			LeafState::LeafWasNotPlaced  // Southeast
+		})
+	},
+	{
+		Version::v1_16_4,
+		TreeType::Oak,
+		Coordinate(-358, -560),
+		Biome::Forest,    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
+		PossibleHeightsRange(4), // The height of the tree's trunk (i.e. the number of logs it has). (Should be in the range [4,6] for Oak or [5,7] for Birch.)
+
+		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
+			// Lowest y-level:
+			LeafState::LeafWasNotPlaced, // Northwest
+			LeafState::LeafWasPlaced, // Southwest
+			LeafState::LeafWasNotPlaced, // Northeast
+			LeafState::LeafWasNotPlaced, // Southeast
+			// Middle y-level:
+			LeafState::LeafWasPlaced, // Northwest
+			LeafState::Unknown, // Southwest
+			LeafState::LeafWasPlaced, // Northeast
+			LeafState::Unknown, // Southeast
+			// Highest y-level:
+			LeafState::LeafWasPlaced, // Northwest
+			LeafState::Unknown, // Southwest
+			LeafState::LeafWasPlaced, // Northeast
+			LeafState::Unknown  // Southeast
+		})
+	},
+	{
+		Version::v1_16_4,
+		TreeType::Oak,
+		Coordinate(-361, -556),
+		Biome::Forest,    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
+		PossibleHeightsRange(6), // The height of the tree's trunk (i.e. the number of logs it has). (Should be in the range [4,6] for Oak or [5,7] for Birch.)
+
+		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
+			// Lowest y-level:
+			LeafState::LeafWasNotPlaced, // Northwest
+			LeafState::LeafWasPlaced, // Southwest
+			LeafState::Unknown, // Northeast
+			LeafState::LeafWasPlaced, // Southeast
+			// Middle y-level:
+			LeafState::LeafWasNotPlaced, // Northwest
+			LeafState::LeafWasNotPlaced, // Southwest
+			LeafState::Unknown, // Northeast
+			LeafState::LeafWasNotPlaced, // Southeast
+			// Highest y-level:
+			LeafState::LeafWasNotPlaced, // Northwest
+			LeafState::LeafWasPlaced, // Southwest
+			LeafState::LeafWasPlaced, // Northeast
+			LeafState::LeafWasNotPlaced  // Southeast
+		})
+	},
+	{
+		Version::v1_16_4, // (Should be 1.6.4- or 1.12.2+.)
+		TreeType::Fancy_Oak,
+		Coordinate(-367, -559),
+		Biome::Forest,       // (Should be Forest.)
+		PossibleHeightsRange(4), // The height of the tree's trunk (i.e. the number of logs it has). (Should be in the range [3,14].)
+	},
+	{
+		Version::v1_16_4,
+		TreeType::Oak,
+		Coordinate(-368, -553),
+		Biome::Forest,    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
+		PossibleHeightsRange(4), // The height of the tree's trunk (i.e. the number of logs it has). (Should be in the range [4,6] for Oak or [5,7] for Birch.)
+
+		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
+			// Lowest y-level:
+			LeafState::LeafWasPlaced, // Northwest
+			LeafState::LeafWasNotPlaced, // Southwest
+			LeafState::LeafWasNotPlaced, // Northeast
+			LeafState::LeafWasPlaced, // Southeast
+			// Middle y-level:
+			LeafState::LeafWasPlaced, // Northwest
+			LeafState::LeafWasNotPlaced, // Southwest
+			LeafState::LeafWasNotPlaced, // Northeast
+			LeafState::LeafWasPlaced, // Southeast
+			// Highest y-level:
+			LeafState::LeafWasNotPlaced, // Northwest
+			LeafState::LeafWasNotPlaced, // Southwest
+			LeafState::LeafWasNotPlaced, // Northeast
+			LeafState::LeafWasNotPlaced  // Southeast
+		})
+	},
+	{
+		Version::v1_16_4,
+		TreeType::Oak,
+		Coordinate(-356, -547),
+		Biome::Forest,    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
+		PossibleHeightsRange(4), // The height of the tree's trunk (i.e. the number of logs it has). (Should be in the range [4,6] for Oak or [5,7] for Birch.)
+
+		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
+			// Lowest y-level:
+			LeafState::LeafWasPlaced, // Northwest
+			LeafState::LeafWasNotPlaced, // Southwest
+			LeafState::LeafWasNotPlaced, // Northeast
+			LeafState::LeafWasNotPlaced, // Southeast
+			// Middle y-level:
+			LeafState::LeafWasPlaced, // Northwest
+			LeafState::LeafWasPlaced, // Southwest
+			LeafState::LeafWasNotPlaced, // Northeast
+			LeafState::LeafWasNotPlaced, // Southeast
+			// Highest y-level:
+			LeafState::Unknown, // Northwest
+			LeafState::LeafWasNotPlaced, // Southwest
+			LeafState::LeafWasNotPlaced, // Northeast
+			LeafState::LeafWasPlaced  // Southeast
+		})
+	},
+	// {
+	// 	Version::v1_16_4,
+	// 	TreeType::Birch,
+	// 	Coordinate(-358, -557),
+	// 	Biome::Forest,    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
+	// 	PossibleHeightsRange(5), // The height of the tree's trunk (i.e. the number of logs it has). (Should be in the range [4,6] for Oak or [5,7] for Birch.)
+	//
+	// 	std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
+	// 		// Lowest y-level:
+	// 		LeafState::Unknown, // Northwest
+	// 		LeafState::Unknown, // Southwest
+	// 		LeafState::Unknown, // Northeast
+	// 		LeafState::LeafWasPlaced, // Southeast
+	// 		// Middle y-level:
+	// 		LeafState::LeafWasPlaced, // Northwest
+	// 		LeafState::Unknown, // Southwest
+	// 		LeafState::Unknown, // Northeast
+	// 		LeafState::LeafWasNotPlaced, // Southeast
+	// 		// Highest y-level:
+	// 		LeafState::LeafWasPlaced, // Northwest
+	// 		LeafState::LeafWasNotPlaced, // Southwest
+	// 		LeafState::LeafWasNotPlaced, // Northeast
+	// 		LeafState::LeafWasNotPlaced  // Southeast
+	// 	})
+	// },
+	// {
+	// 	Version::v1_16_4,
+	// 	TreeType::Birch,
+	// 	Coordinate(-358, -550),
+	// 	Biome::Forest,    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
+	// 	PossibleHeightsRange(6), // The height of the tree's trunk (i.e. the number of logs it has). (Should be in the range [4,6] for Oak or [5,7] for Birch.)
+	//
+	// 	std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
+	// 		// Lowest y-level:
+	// 		LeafState::LeafWasPlaced, // Northwest
+	// 		LeafState::LeafWasNotPlaced, // Southwest
+	// 		LeafState::LeafWasNotPlaced, // Northeast
+	// 		LeafState::Unknown, // Southeast
+	// 		// Middle y-level:
+	// 		LeafState::LeafWasPlaced, // Northwest
+	// 		LeafState::LeafWasPlaced, // Southwest
+	// 		LeafState::LeafWasNotPlaced, // Northeast
+	// 		LeafState::Unknown, // Southeast
+	// 		// Highest y-level:
+	// 		LeafState::LeafWasNotPlaced, // Northwest
+	// 		LeafState::LeafWasPlaced, // Southwest
+	// 		LeafState::LeafWasPlaced, // Northeast
+	// 		LeafState::LeafWasPlaced  // Southeast
+	// 	})
+	// },
 };
 
 #endif

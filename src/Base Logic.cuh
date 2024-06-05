@@ -5,18 +5,18 @@
 #include <string>
 
 // Returns the compile-time minimum of two comparable values.
-template <class T>
+template<class T>
 __host__ __device__ [[nodiscard]] constexpr T constexprMin(const T &a, const T &b) noexcept {
 	return a < b ? a : b;
 }
 // Returns the compile-time maximum of two comparable values.
-template <class T>
+template<class T>
 __host__ __device__ [[nodiscard]] constexpr T constexprMax(const T &a, const T &b) noexcept {
 	return a > b ? a : b;
 }
 // Swaps two elements in compilation-time.
 // TODO: Create backup for std::move in case it isn't constexpr on a device?
-template <class T>
+template<class T>
 __device__ constexpr void constexprSwap(T &first, T &second) noexcept {
 	auto __temp = std::move(first);
 	first = std::move(second);
@@ -95,7 +95,7 @@ __host__ __device__  [[nodiscard]] constexpr uint64_t getBitmask(const int32_t b
 }
 
 // Returns the lowest [bits] bits of value.
-__host__ __device__  [[nodiscard]] constexpr uint64_t mask(const uint64_t value, const int32_t bits) noexcept {
+__host__ __device__  [[nodiscard]] constexpr uint64_t getLowestBitsOf(const uint64_t value, const int32_t bits) noexcept {
 	return value & getBitmask(bits);
 }
 
@@ -133,18 +133,24 @@ __host__ __device__ [[nodiscard]] constexpr uint32_t getNumberOfOnesIn(const uin
 
 // For pre-C++17
 // TODO: Also create (working) const char * implementation?
-std::string getFilepathStem(const std::string &filepath) {
+[[nodiscard]] std::string getFilepathStem(const std::string &filepath) {
 	return filepath.substr(0, filepath.rfind('.'));
 }
 
 // For pre-C++17
-const char *getFilepathExtension(const char *filepath) noexcept {
+[[nodiscard]] const char *getFilepathExtension(const char *filepath) noexcept {
 	return std::strrchr(filepath, '.');
 }
-std::string getFilepathExtension(const std::string &filepath) noexcept {
+[[nodiscard]] std::string getFilepathExtension(const std::string &filepath) noexcept {
 	return std::string(std::strrchr(filepath.c_str(), '.'));
 }
 
+// A two-dimensional position in space.
+struct Position {
+	double x, z;
+	__host__ __device__ constexpr Position() noexcept : x(), z() {}
+	__host__ __device__ constexpr Position(const double x, const double z) noexcept : x(x), z(z) {}
+};
 // A two-dimensional coordinate.
 struct Coordinate {
 	int32_t x, z;
@@ -166,12 +172,12 @@ struct IntInclusiveRange {
 	__device__ constexpr IntInclusiveRange(const IntInclusiveRange &range1, const IntInclusiveRange &range2) noexcept : lowerBound(constexprMax(range1.lowerBound, range2.lowerBound)), upperBound(constexprMin(range1.upperBound, range2.upperBound)) {}
 
 	// Returns if a value falls within the range.
-	__device__ constexpr bool contains(int32_t value) const noexcept {
+	__device__ [[nodiscard]] constexpr bool contains(int32_t value) const noexcept {
 		return this->lowerBound <= value && value <= this->upperBound;
 	}
 
 	// Returns the range's range.
-	__host__ __device__ constexpr int32_t getRange() const noexcept {
+	__host__ __device__ [[nodiscard]] constexpr int32_t getRange() const noexcept {
 		return this->upperBound - this->lowerBound + 1;
 	}
 };
@@ -193,13 +199,14 @@ struct CoordInclusiveRange {
 	__device__ constexpr CoordInclusiveRange(const CoordInclusiveRange &range1, const CoordInclusiveRange &range2) noexcept : lowerBound{constexprMax(range1.lowerBound.x, range2.lowerBound.x), constexprMax(range1.lowerBound.z, range2.lowerBound.z)}, upperBound{constexprMin(range1.upperBound.x, range2.upperBound.x), constexprMin(range1.upperBound.z, range2.upperBound.z)} {}
 
 	// Returns if a value falls within the range.
-	__host__ __device__ constexpr bool contains(Coordinate value) const noexcept {
+	__host__ __device__ [[nodiscard]] constexpr bool contains(Coordinate value) const noexcept {
 		return this->lowerBound.x <= value.x && value.x <= this->upperBound.x && this->lowerBound.z <= value.z && value.z <= this->upperBound.z;
 	}
 
 	// Returns the range's range.
-	__host__ __device__ constexpr Coordinate getRange() const noexcept {
+	__host__ __device__ [[nodiscard]] constexpr Coordinate getRange() const noexcept {
 		return {this->upperBound.x - this->lowerBound.x + 1, this->upperBound.z - this->lowerBound.z + 1};
 	}
 };
+
 #endif

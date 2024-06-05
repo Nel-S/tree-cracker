@@ -6,7 +6,7 @@
 // Seed: 123
 // Structure seed: 123
 // Treechunk seed: 13108863711061
-__device__ constexpr InputData TEST_DATA_14_1_1[] = {
+__device__ constexpr InputData TEST_DATA_14_4_1[] = {
 	{
 		Version::v1_14_4,
 		TreeType::Oak,

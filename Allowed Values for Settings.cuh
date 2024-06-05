@@ -1,7 +1,7 @@
 #ifndef __ALLOWED_VALUES_FOR_SETTINGS_CUH
 #define __ALLOWED_VALUES_FOR_SETTINGS_CUH
 
-#include "src/Experimental Settings.cuh"
+#include "src/Base Logic.cuh"
 #include <array>
 
 // The list of supported versions.
@@ -25,24 +25,24 @@ enum class Version {
 	/* v1_14, v1_14_0 = v1_14, v1_14_1, v1_14_2, v1_14_3, */ v1_14_4 = 3,
 	// v1_15, v1_15_0 = v1_15, v1_15_1, v1_15_2,
 	/* v1_16, v1_16_0 = v1_16, */ v1_16_1, /* v1_16_2, v1_16_3, */ v1_16_4, /* v1_16_5, */
-	// v1_17, v1_17_0 = v1_17, v1_17_1,
+	/* v1_17, v1_17_0 = v1_17, */ v1_17_1,
 		// NelS: Possibly unsupportable due to xoroshiro128++?
 	// v1_18, v1_18_0 = v1_18, v1_18_1, v1_18_2,
 	// v1_19, v1_19_0 = v1_19, v1_19_1, v1_19_2, v1_19_3, v1_19_4,
 	// v1_20, v1_20_0 = v1_20, v1_20_1, v1_20_2, v1_20_3, v1_20_4, v1_20_5, v1_20_6,
 	// Unknown,
-	AUTO = v1_16_4 // Latest implemented version
+	AUTO = v1_17_1 // Latest implemented version
 };
 
 // The list of supported tree types.
 enum class TreeType {
-	Oak, Large_Oak, Birch, Unknown,
+	Oak, Fancy_Oak, Birch, Unknown,
 	AUTO = Unknown
 };
 
 // The list of supported biomes.
 enum class Biome {
-	Forest, Birch_Forest,
+	Forest,
 	NumberOfBiomes,
 	AUTO = Forest
 };
@@ -61,9 +61,63 @@ enum class LeafState {
 	LeafWasNotPlaced, LeafWasPlaced, Unknown, AUTO = Unknown
 };
 
+// These are flags, meaning you can OR them together to print multiple types simultaneously.
+enum class OutputType {
+	Structure_Seeds = 2,
+	AUTO = Structure_Seeds
+};
+// To allow multiple OutputTypes to be set simultaneously
+__host__ __device__ constexpr OutputType operator&(const OutputType &left, const OutputType &right) {
+	return static_cast<OutputType>(static_cast<uint64_t>(left) & static_cast<uint64_t>(right));
+}
+__host__ __device__ constexpr OutputType operator|(const OutputType &left, const OutputType &right) {
+	return static_cast<OutputType>(static_cast<uint64_t>(left) | static_cast<uint64_t>(right));
+}
+
 enum Setting {
 	AUTO = INT32_MAX
 };
+
+
+/* ===================================================================================================================
+    THESE SETTINGS ARE EXPERIMENTAL AND STILL UNDER DEVELOPMENT.
+	IF CHANGED FROM THEIR DEFAULTS, NO GUARANTEES ARE MADE REGARDING WHETHER THEY'LL WORK, WHETHER THEY'LL EVER WORK,
+	WHETHER THEY'LL OUTRIGHT BREAK THE ENTIRE PROGRAM, ETC.
+   =================================================================================================================== */
+
+enum class Device {
+	CUDA, CPU,
+	AUTO = CUDA
+};
+
+enum class ExperimentalVersion {
+	v1_6_4, v1_8_9, v1_12_2
+};
+
+enum class ExperimentalTreeType {
+	Pine = static_cast<int>(TreeType::Unknown) + 1, Spruce
+};
+
+enum class ExperimentalBiome {
+	Birch_Forest = static_cast<int>(Biome::NumberOfBiomes) + 1, Taiga
+};
+
+enum class LargeBiomesFlag {
+	False, True, Unknown,
+	AUTO = Unknown
+};
+
+// These are flags, meaning you can OR them together to print multiple types simultaneously. (See AUTO for an example.)
+enum class ExperimentalOutputType {
+	Highest_Information_Treechunk_Seeds = 1,
+	Text_Worldseeds = 4,
+	Random_Worldseeds = 8,
+	All_Worldseeds = 16,
+	AUTO = Text_Worldseeds | Random_Worldseeds
+};
+
+/* =================================================================================================================== */
+
 
 struct InputData {
 	/* The overall layout of each input element.
@@ -74,9 +128,9 @@ struct InputData {
 	Biome biome;
 	PossibleHeightsRange trunkHeight;
 	/* Only one of the following sets of attributes can be present for each tree.
-	   (Large Oaks don't have any such attributes.)*/
+	   (Fancy Oaks don't have any such attributes.)*/
 	union {
-		// Non-large Oak/Birch
+		// Normal Oak/Birch
 		struct {
 			LeafState leafStates[NUMBER_OF_LEAF_POSITIONS];
 		};
@@ -99,7 +153,7 @@ struct InputData {
 		coordinate(coordinate),
 		biome(biome),
 		leafStates{LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO} {}
-	// Large Oak tree/Generic constructor, trunkHeight known
+	// Fancy Oak tree/Generic constructor, trunkHeight known
 	constexpr InputData(const Version version, const TreeType treeType, const Coordinate &coordinate, const Biome biome, const PossibleHeightsRange &trunkHeight) noexcept :
 		version(version),
 		treeType(treeType),
@@ -107,7 +161,7 @@ struct InputData {
 		biome(biome),
 		trunkHeight(trunkHeight),
 		leafStates{LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO, LeafState::AUTO} {}
-	// Non-large Oak/Birch tree constructor
+	// Normal Oak/Birch tree constructor
 	constexpr InputData(const Version version, const TreeType treeType, const Coordinate &coordinate, const Biome biome, const PossibleHeightsRange &trunkHeight, const std::array<LeafState, NUMBER_OF_LEAF_POSITIONS> leafStates) noexcept :
 		version(version),
 		treeType(treeType),

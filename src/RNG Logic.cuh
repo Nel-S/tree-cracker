@@ -16,9 +16,11 @@ struct LCG {
 		uint64_t combined_multiplier = (this->multiplier * other.multiplier) & LCG::MASK;
 		this->addend = (this->addend * other.multiplier + other.addend) & LCG::MASK;
 		this->multiplier = combined_multiplier;
+		// this->multiplier = (this->multiplier * other.multiplier) & LCG::MASK;
+		// this->addend = (this->addend * other.multiplier + other.addend) & LCG::MASK;
 	}
 
-	__host__ __device__ static constexpr LCG combine(const int64_t n) noexcept {
+	__host__ __device__ [[nodiscard]] static constexpr LCG combine(const int64_t n) noexcept {
 		uint64_t skip = static_cast<uint64_t>(n) & LCG::MASK;
 
 		LCG lcg(1, 0);
@@ -42,7 +44,7 @@ struct Random {
 	__host__ __device__ explicit Random(const uint64_t seed) noexcept : seed((seed ^ LCG::MULTIPLIER) & LCG::MASK) {}
 
 	// Initialize a Random instance with an explicit given internal state.
-	__host__ __device__ static Random withSeed(const uint64_t state) noexcept {
+	__host__ __device__ [[nodiscard]] static Random withSeed(const uint64_t state) noexcept {
 		Random random;
 		random.seed = state;
 		return random;
@@ -52,28 +54,38 @@ struct Random {
 	__host__ __device__ void setSeed(const uint64_t seed) noexcept {
 		this->seed = (seed ^ LCG::MULTIPLIER) & LCG::MASK;
 	}
-	__host__ __device__ uint64_t setDecorationSeed(const uint64_t worldSeed, const int32_t x, const int32_t z) noexcept {
+	// TODO: Convert bool to use Version
+	__host__ __device__ uint64_t setPopulationSeed(const uint64_t worldSeed, const int32_t x, const int32_t z, const bool post1_12) noexcept {
 		this->setSeed(worldSeed);
-		uint64_t a = this->nextLong() | 1;
-		uint64_t b = this->nextLong() | 1;
+		uint64_t a, b;
+		if (!post1_12) {
+			a = static_cast<uint64_t>(static_cast<int64_t>(this->nextLong()) / 2 * 2 + 1);
+			b = static_cast<uint64_t>(static_cast<int64_t>(this->nextLong()) / 2 * 2 + 1);
+		} else {
+			a = this->nextLong() | 1;
+			b = this->nextLong() | 1;
+		}
 		uint64_t seed = (static_cast<uint64_t>(x) * a + static_cast<uint64_t>(z) * b) ^ worldSeed;
 		this->setSeed(seed);
 		return seed;
 	}
-	__host__ __device__ void setFeatureSeed(const uint64_t decorationSeed, const uint32_t index, const uint32_t step) noexcept {
+	__host__ __device__ uint64_t setFeatureSeed(const uint64_t decorationSeed, const uint32_t index, const uint32_t step) noexcept {
 		uint64_t seed = decorationSeed + static_cast<uint64_t>(index) + static_cast<uint64_t>(10000 * step);
 		this->setSeed(seed);
+		return seed;
 	}
-	__host__ __device__ void setLargeFeatureSeed(const uint64_t worldSeed, const int32_t chunkX, const int32_t chunkZ) noexcept {
+	__host__ __device__ uint64_t setLargeFeatureSeed(const uint64_t worldSeed, const int32_t chunkX, const int32_t chunkZ) noexcept {
 		this->setSeed(worldSeed);
 		uint64_t a = this->nextLong();
 		uint64_t b = this->nextLong();
 		uint64_t seed = (static_cast<uint64_t>(chunkX) * a ^ static_cast<uint64_t>(chunkZ) * b) ^ worldSeed;
 		this->setSeed(seed);
+		return seed;
 	}
-	__host__ __device__ void setLargeFeatureWithSalt(const uint64_t worldSeed, const int32_t regionX, const int32_t regionZ, const int32_t salt) noexcept {
+	__host__ __device__ uint64_t setLargeFeatureWithSalt(const uint64_t worldSeed, const int32_t regionX, const int32_t regionZ, const int32_t salt) noexcept {
 		uint64_t seed = static_cast<uint64_t>(regionX) * UINT64_C(341873128712) + static_cast<uint64_t>(regionZ) * UINT64_C(132897987541) + worldSeed + static_cast<uint64_t>(salt);
 		this->setSeed(seed);
+		return seed;
 	}
 
 	template<int64_t N = 1>
@@ -153,9 +165,9 @@ struct Random {
 		return static_cast<double>((static_cast<uint64_t>(a) << 27) + static_cast<uint64_t>(b)) * 0x1.0p-53;
 	}
 
-	// Returns whether a state could be generated as the result of a nextLong.
-	// Adapted from Panda4994 (https://github.com/Panda4994/panda4994.github.io/blob/48526d35d3d38750102b9f360dff45a4bdbc50bd/seedinfo/js/Random.js#L16).
-	__host__ __device__ static constexpr bool isFromNextLong(const uint64_t state) noexcept {
+	/* Returns whether a state could be generated as the result of a nextLong.
+	   Adapted from Panda4994 (https://github.com/Panda4994/panda4994.github.io/blob/48526d35d3d38750102b9f360dff45a4bdbc50bd/seedinfo/js/Random.js#L16).*/
+	__host__ __device__ [[nodiscard]] static constexpr bool isFromNextLong(const uint64_t state) noexcept {
 		uint64_t secondNextLong = state & 0xffffffff;
 		uint64_t firstNextLong = ((state >> 32) & 0xffffffff) + static_cast<uint64_t>(secondNextLong > 0x7fffffff);
 		uint64_t upper32Bits = (firstNextLong << 16) * LCG::MULTIPLIER + LCG::ADDEND;
@@ -163,6 +175,24 @@ struct Random {
 			if (((upper32Bits + lower16Bits*LCG::MULTIPLIER) & LCG::MASK) >> 16 == secondNextLong) return true;
 		}
 		return false;
+	}
+
+	/* Derives up to maxResults randomly-generatable worldseeds with a given structure seed and stores them in array. Returns their count.*/
+	// TODO: Verify correctness
+	// TODO: Find maximum number possible
+	__device__ static constexpr uint32_t getRandomSeedsFromStructureSeed(uint64_t structureSeed, const size_t maxResults, uint64_t *array) noexcept {
+		structureSeed &= LCG::MASK;
+		uint32_t arrayLength = 0;
+		uint64_t prevStateUpperBits = (structureSeed << 16) * 246154705703781 + 107048004364969; // Technically should be ANDed with LCG::MASK, but since prevState performs the AND anyways there's no point
+		for (uint64_t lower16Bits = 0; lower16Bits < 65536; ++lower16Bits) {
+			uint64_t prevState = (prevStateUpperBits + lower16Bits * 246154705703781) & LCG::MASK;
+			if ((prevState >> 16) & 0xffff == structureSeed >> 32) {
+				arrayLength = atomicAdd(reinterpret_cast<unsigned long long *>(array), 1);
+				if (arrayLength >= maxResults) break;
+				array[arrayLength] = ((prevState & 0xffff00000000) << 16) + structureSeed;
+			}
+		}
+		return arrayLength;
 	}
 };
 

@@ -1,8 +1,11 @@
 #ifndef __FILTERS_CUH
 #define __FILTERS_CUH
 
-#include "ChunkRandom Reversal Logic.cuh"
+#include "Population Chunk Reversal Logic.cuh"
 #include "Biome Logic.cuh"
+
+// TODO: Add checks to ensure filters' inputs and outputs are distinct
+#define PRINT_INPUT filterStorageA
 
 __managed__ uint64_t filter1_numberOfResultsPerRun = 0;
 #define FILTER_1_OUTPUT filterStorageA
@@ -20,7 +23,7 @@ __managed__ uint64_t treechunkFilter_numberOfResultsPerRun = 0;
 #define TREECHUNK_FILTER_INPUT  filterStorageA
 #define TREECHUNK_FILTER_OUTPUT filterStorageB
 
-// TODO: Migrate ChunkRandom Reversal settings to here (then move filter storage arrays from Settings and Input Data Processing.cuh)
+// TODO: Migrate Population Chunk Reversal settings to here (then move filter storage arrays from Settings_and_Input_Data_Processing.cuh)
 
 __managed__ uint64_t filter5_numberOfResultsPerRun = 0;
 #define FILTER_5_INPUT  filterStorageB
@@ -62,7 +65,7 @@ __device__ uint32_t filter8_masks[(ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN + 31) / 
 // #endif
 // }
 // #if CUDA_IS_PRESENT
-// __global__ __launch_bounds__(ACTUAL_WORKERS_PER_BLOCK) void transferResults(const uint64_t *source, Stage2Results *destination) {
+// __global__ __launch_bounds__(ACTUAL_WORKERS_PER_BLOCK) void transferResults(const uint64_t *source, Tuple *destination) {
 // 	uint32_t index = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 // // TODO: Implement pthreads variant
@@ -76,7 +79,7 @@ __device__ uint32_t filter8_masks[(ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN + 31) / 
 // #endif
 // }
 // #if CUDA_IS_PRESENT
-// __global__ __launch_bounds__(ACTUAL_WORKERS_PER_BLOCK) void transferResults(const Stage2Results *source, uint64_t *destination) {
+// __global__ __launch_bounds__(ACTUAL_WORKERS_PER_BLOCK) void transferResults(const Tuple *source, uint64_t *destination) {
 // 	uint32_t index = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 // // TODO: Implement pthreads variant
@@ -90,7 +93,7 @@ __device__ uint32_t filter8_masks[(ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN + 31) / 
 // #endif
 // }
 // #if CUDA_IS_PRESENT
-// __global__ __launch_bounds__(ACTUAL_WORKERS_PER_BLOCK) void transferResults(const Stage2Results *source, Stage2Results *destination) {
+// __global__ __launch_bounds__(ACTUAL_WORKERS_PER_BLOCK) void transferResults(const Tuple *source, Tuple *destination) {
 // 	uint32_t index = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 // // TODO: Implement pthreads variant
@@ -116,6 +119,20 @@ __device__ uint32_t filter8_masks[(ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN + 31) / 
 __global__ __launch_bounds__(ACTUAL_WORKERS_PER_BLOCK) void filter1(const uint64_t start) {
 	uint32_t index = blockIdx.x * blockDim.x + threadIdx.x;
 	uint64_t seed = (RELATIVE_COORDINATES_MODE ? UINT64_C(0) : (static_cast<uint64_t>(ABSOLUTE_POPULATION_CHUNKS_DATA.treeChunks[currentPopulationChunkDataIndex].treePositions[0].populationChunkXOffset) << 44)) + start + index;
+	// From Cortex's TreeCracker, but is both slower and doesn't seem to work at the moment...
+	// uint64_t index = static_cast<uint64_t>(blockIdx.x) * blockDim.x + threadIdx.x + start;
+	// int64_t latticeX = (index % PARALLELOGRAM_SIZE.x) + PARALLELOGRAM_LOWEST_CORNER.x;
+	// int64_t latticeZ = (index/PARALLELOGRAM_SIZE.x) + PARALLELOGRAM_LOWEST_CORNER.z;
+	// if (VECTOR_1.x * latticeZ < VECTOR_1.z * latticeX) latticeZ += PARALLELOGRAM_SIZE.z;
+	// if (VECTOR_2.x * latticeZ < VECTOR_2.z * latticeX) {
+	// 	latticeX += VECTOR_1.x;
+	// 	latticeZ += VECTOR_1.z;
+	// }
+	// latticeX += ABSOLUTE_POPULATION_CHUNKS_DATA.treeChunks[0].treePositions[0].populationChunkXOffset * VECTOR_1.x + ABSOLUTE_POPULATION_CHUNKS_DATA.treeChunks[0].treePositions[0].populationChunkZOffset * VECTOR_2.x;
+	// latticeZ += ABSOLUTE_POPULATION_CHUNKS_DATA.treeChunks[0].treePositions[0].populationChunkXOffset * VECTOR_1.z + ABSOLUTE_POPULATION_CHUNKS_DATA.treeChunks[0].treePositions[0].populationChunkZOffset * VECTOR_2.z;
+
+	// uint64_t seed = (latticeX * 7847617 + latticeZ * -18218081) & LCG::MASK;
+
 #else
 void *filter1(void *start) {
 	ThreadData *star = static_cast<ThreadData *>(start);
@@ -551,12 +568,15 @@ void *filter8(void *dat) {
 #if CUDA_IS_PRESENT
 __global__ __launch_bounds__(ACTUAL_WORKERS_PER_BLOCK) void biomeFilter() {
 	uint32_t index = blockIdx.x * blockDim.x + threadIdx.x;
-	uint64_t topBits = index & 65535;
-	index /= 65536;
 #else
 void *biomeFilter(void *dat) {
 	uint64_t index = static_cast<ThreadData *>(dat)->index;
 #endif
+	uint64_t topBits = 0;
+	if (static_cast<int32_t>(TYPES_TO_OUTPUT) & (static_cast<int32_t>(ExperimentalOutputType::Random_Worldseeds) | static_cast<int32_t>(ExperimentalOutputType::All_Worldseeds))) {
+		topBits = index & 65535;
+		index /= 65536;
+	}
 	if (index >= totalStructureSeedsPerRun) FILTER_RETURN;
 	Generator g;
 	int biomes[8095]; // Largest possible output of Cubiomes' getMinCacheSize()
@@ -608,7 +628,7 @@ void *biomeFilter(void *dat) {
 			#pragma unroll
 			for (uint32_t j = 0; j < ABSOLUTE_POPULATION_CHUNKS_DATA.treeChunks[i].numberOfTreePositions; ++j) {
 				uint32_t correspondingIndex = 16*ABSOLUTE_POPULATION_CHUNKS_DATA.treeChunks[i].treePositions[j].populationChunkZOffset + ABSOLUTE_POPULATION_CHUNKS_DATA.treeChunks[i].treePositions[j].populationChunkXOffset;
-				if (!biomeHasGrass(biomes[correspondingIndex])) {
+				if (!biomeHasDirtOrGrass(biomes[correspondingIndex])) {
 					#if CUDA_IS_PRESENT
 						return;
 					#else

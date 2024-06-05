@@ -14,7 +14,7 @@ constexpr uint64_t FORWARD_4_ADDEND = 49720483695876;
 
 // Returns a population seed.
 // TODO: Combine with Random in RNG.cuh
-__device__ uint64_t getPopulationSeed(const uint64_t structureSeed, const int32_t x, const int32_t z, const Version version) {
+__device__ [[nodiscard]] uint64_t getPopulationSeed(const uint64_t structureSeed, const int32_t x, const int32_t z, const Version version) {
 	Random random(structureSeed);
 	uint64_t a, b;
 	if (version <= static_cast<Version>(ExperimentalVersion::v1_12_2)) {
@@ -124,7 +124,7 @@ __device__ void reversePopulationSeed(const uint64_t populationSeed, const int32
 			}
 			if (invalid || xoredStructureSeedBits != 48 - constant_mult_zeros) continue;
 
-			for (uint64_t structureSeed = mask(xoredStructureSeed ^ LCG::MULTIPLIER, xoredStructureSeedBits); structureSeed <= LCG::MASK; structureSeed += UINT64_C(1) << xoredStructureSeedBits) {
+			for (uint64_t structureSeed = getLowestBitsOf(xoredStructureSeed ^ LCG::MULTIPLIER, xoredStructureSeedBits); structureSeed <= LCG::MASK; structureSeed += UINT64_C(1) << xoredStructureSeedBits) {
 				if (getPopulationSeed(structureSeed, x, z, version) != populationSeed) continue;
 				// printf("(%" PRIu64 ")\n", structureSeed);
 				uint64_t resultIndex = atomicAdd(reinterpret_cast<unsigned long long*>(&totalStructureSeedsPerRun), 1);
