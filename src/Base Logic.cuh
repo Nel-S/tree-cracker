@@ -2,7 +2,12 @@
 #define __BASE_CUH
 
 #include "Non-CUDA Support.cuh"
+#include <set>
 #include <string>
+
+/* ==========================================================================================
+   CONSTEXPR HELPER FUNCTIONS in case one's STLs doesn't have them as constexpr (mine didn't)
+   ========================================================================================== */
 
 // Returns the compile-time minimum of two comparable values.
 template<class T>
@@ -28,14 +33,12 @@ __host__ __device__ [[nodiscard]] constexpr int64_t constexprFloor(const double 
 	int64_t xAsInteger = static_cast<int64_t>(x);
     return xAsInteger - static_cast<int64_t>(x < xAsInteger);
 }
-
 /* Returns the compile-time ceiling of a real number.
    From s3cur3 on Stack Overflow (https://stackoverflow.com/a/66146159).*/
 __host__ __device__ [[nodiscard]] constexpr int64_t constexprCeil(const double x) noexcept {
 	int64_t xAsInteger = static_cast<int64_t>(x);
     return xAsInteger + static_cast<int64_t>(x > xAsInteger);
 }
-
 /* Returns the compile-time rounded value of a real number.
    From Verdy p on Wikipedia (https://en.wikipedia.org/w/index.php?diff=378485717).*/
 __host__ __device__ [[nodiscard]] constexpr int64_t constexprRound(const double x) noexcept {
@@ -83,19 +86,22 @@ __host__ __device__ [[nodiscard]] constexpr double constexprLog2(const double x)
 	return constexprLog(x)/0.693147180559945309417; // ln(2)
 }
 
+/* =====================
+   BIT-RELATED FUNCTIONS
+   ===================== */
 
 // Returns 2**bits.
-__host__ __device__ [[nodiscard]] constexpr uint64_t twoToThePowerOf(const int32_t bits) noexcept {
+__host__ __device__ [[nodiscard]] constexpr uint64_t twoToThePowerOf(const uint32_t bits) noexcept {
 	return UINT64_C(1) << bits;
 }
 
 // Returns a [bits]-bit-wide mask.
-__host__ __device__  [[nodiscard]] constexpr uint64_t getBitmask(const int32_t bits) noexcept {
+__host__ __device__  [[nodiscard]] constexpr uint64_t getBitmask(const uint32_t bits) noexcept {
 	return twoToThePowerOf(bits) - UINT64_C(1);
 }
 
 // Returns the lowest [bits] bits of value.
-__host__ __device__  [[nodiscard]] constexpr uint64_t getLowestBitsOf(const uint64_t value, const int32_t bits) noexcept {
+__host__ __device__  [[nodiscard]] constexpr uint64_t getLowestBitsOf(const uint64_t value, const uint32_t bits) noexcept {
 	return value & getBitmask(bits);
 }
 
@@ -120,16 +126,52 @@ __host__ __device__  [[nodiscard]] constexpr uint32_t getNumberOfTrailingZeroes(
 __host__ __device__  [[nodiscard]] constexpr uint32_t getNumberOfLeadingZeroes(const uint64_t value) noexcept {
 	if (!value) return 64;
 	uint32_t count = 0;
-	for (uint64_t v = value; !(v & (UINT64_C(1) << 63)); v <<= 1) ++count;
+	for (uint64_t v = value; !(v & twoToThePowerOf(63)); v <<= 1) ++count;
 	return count;
 }
 
 __host__ __device__ [[nodiscard]] constexpr uint32_t getNumberOfOnesIn(const uint32_t x) noexcept {
 	uint32_t count = 0;
-	for (uint32_t i = x; static_cast<bool>(i); i >>= 1) count += static_cast<int>(i & 1);
+	for (uint32_t i = x; static_cast<bool>(i); i >>= 1) count += static_cast<uint32_t>(i & 1);
 	return count;
 }
 
+
+/* ===============
+   ARRAY FUNCTIONS
+   =============== */
+
+// Transfers entries from one source to another. Effectively cross-platform cudaMemcpy/memcpy.
+template <class T>
+void transferEntries(const T *source, T *destination, const size_t numberOfEntries) {
+	// If source and destination have same address, they're already the same
+	if (source == destination) return;
+	// Otherwise:
+	#if CUDA_IS_PRESENT
+		// TODO: This is failing to transfer the results properly, causing all printed treechunk seeds to be 0. Why?
+		// TODO: Maybe only print here if Structure_Seeds etc. are disabled; otherwise bundle/derive treechunk seeds with structure seeds/worldseeds at later print
+		TRY_CUDA(cudaMemcpy(destination, source, numberOfEntries*sizeof(*source), cudaMemcpyKind::cudaMemcpyDefault));
+		TRY_CUDA(cudaGetLastError());
+	#else
+		if (!memcpy(destination, source, numberOfEntries*sizeof(*source))) ABORT("ERROR: Failed to copy %zd elements of TREECHUNK_FILTER_OUTPUT to PRINT_INPUT.\n", numberOfEntries*sizeof(*source));
+	#endif
+}
+
+// Removes duplicates from an array, and also orders its elements.
+template <class T>
+void removeDuplicatesAndOrder(T *array, size_t *numberOfEntries) {
+	std::set<T> set;
+	for (uint64_t i = 0; i < *numberOfEntries; ++i) set.insert(array[i]);
+	*numberOfEntries = static_cast<size_t>(set.size());
+	uint64_t count = 0;
+	for (auto i = set.cbegin(); i != set.cend(); ++i) array[count++] = *i;
+	// set.clear();
+}
+
+
+/* ================
+   STRING FUNCTIONS
+   ================ */
 
 // For pre-C++17
 // TODO: Also create (working) const char * implementation?
@@ -144,6 +186,12 @@ __host__ __device__ [[nodiscard]] constexpr uint32_t getNumberOfOnesIn(const uin
 [[nodiscard]] std::string getFilepathExtension(const std::string &filepath) noexcept {
 	return std::string(std::strrchr(filepath.c_str(), '.'));
 }
+
+template <class T>
+__host__ __device__ constexpr const char *getPlural(const T val) noexcept {
+	return val == 1 ? "" : "s";
+}
+
 
 // A two-dimensional position in space.
 struct Position {

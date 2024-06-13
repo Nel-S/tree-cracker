@@ -62,6 +62,7 @@ __device__ constexpr InputData TEST_DATA_8_9_1[] = {
 // Seed: 123
 // Structure seed: 123
 // Treechunk seed: 241689593949439
+// Population chunk call #: 5076
 __device__ constexpr InputData TEST_DATA_8_9_2[] = {
 	{
 		static_cast<Version>(ExperimentalVersion::v1_8_9),
@@ -244,6 +245,7 @@ __device__ constexpr InputData TEST_DATA_8_9_2[] = {
 // Seed: -5141540374460396599
 // Structure seed: 163025113156553
 // Treechunk seeds: 69261861613140, 83751666894233
+// Population chunk call #s: 5056, ??
 // From Advent
 __device__ constexpr InputData TEST_DATA_8_9_3[] = {
 	{

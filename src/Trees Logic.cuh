@@ -52,7 +52,7 @@ __device__ [[nodiscard]] constexpr uint64_t getTreeSalt(const Biome biome, const
 					return 80001;
 				default: THROW_EXCEPTION(0, "ERROR: Unsupported biome provided.");
 			}
-		case Version::v1_17_1: // Or 1.17.0, I'm not sure
+		case static_cast<Version>(ExperimentalVersion::v1_17_1): // Or 1.17.0, I'm not sure
 			switch (biome) {
 				case Biome::Forest:
 				case static_cast<Biome>(ExperimentalBiome::Birch_Forest):

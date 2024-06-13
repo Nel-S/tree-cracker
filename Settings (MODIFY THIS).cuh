@@ -104,7 +104,7 @@ __device__ constexpr InputData INPUT_DATA[] = {
 };
 
 
-/* Alternatively, you can instead run one of the example input datasets, which can be seen in the following files:*/
+/* Alternatively, you can instead run one of the example input datasets, which can be seen in the following files: */
 #include "Test Data/1.3.1.cuh"
 #include "Test Data/1.6.4.cuh"
 #include "Test Data/1.7.cuh"

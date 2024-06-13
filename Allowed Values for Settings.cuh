@@ -25,13 +25,13 @@ enum class Version {
 	/* v1_14, v1_14_0 = v1_14, v1_14_1, v1_14_2, v1_14_3, */ v1_14_4 = 3,
 	// v1_15, v1_15_0 = v1_15, v1_15_1, v1_15_2,
 	/* v1_16, v1_16_0 = v1_16, */ v1_16_1, /* v1_16_2, v1_16_3, */ v1_16_4, /* v1_16_5, */
-	/* v1_17, v1_17_0 = v1_17, */ v1_17_1,
+	/* v1_17, v1_17_0 = v1_17, v1_17_1, */
 		// NelS: Possibly unsupportable due to xoroshiro128++?
 	// v1_18, v1_18_0 = v1_18, v1_18_1, v1_18_2,
 	// v1_19, v1_19_0 = v1_19, v1_19_1, v1_19_2, v1_19_3, v1_19_4,
 	// v1_20, v1_20_0 = v1_20, v1_20_1, v1_20_2, v1_20_3, v1_20_4, v1_20_5, v1_20_6,
 	// Unknown,
-	AUTO = v1_17_1 // Latest implemented version
+	AUTO = v1_16_4 // Latest implemented version
 };
 
 // The list of supported tree types.
@@ -91,7 +91,7 @@ enum class Device {
 };
 
 enum class ExperimentalVersion {
-	v1_6_4, v1_8_9, v1_12_2
+	v1_6_4, v1_8_9, v1_12_2, v1_17_1 = static_cast<int>(Version::v1_16_4) + 1
 };
 
 enum class ExperimentalTreeType {
@@ -115,6 +115,25 @@ enum class ExperimentalOutputType {
 	All_Worldseeds = 16,
 	AUTO = Text_Worldseeds | Random_Worldseeds
 };
+// TODO: Surely it's possible to condense this.
+__host__ __device__ constexpr ExperimentalOutputType operator&(const ExperimentalOutputType &left, const ExperimentalOutputType &right) {
+	return static_cast<ExperimentalOutputType>(static_cast<uint64_t>(left) & static_cast<uint64_t>(right));
+}
+__host__ __device__ constexpr ExperimentalOutputType operator|(const ExperimentalOutputType &left, const ExperimentalOutputType &right) {
+	return static_cast<ExperimentalOutputType>(static_cast<uint64_t>(left) | static_cast<uint64_t>(right));
+}
+__host__ __device__ constexpr OutputType operator&(const OutputType &left, const ExperimentalOutputType &right) {
+	return static_cast<OutputType>(static_cast<uint64_t>(left) & static_cast<uint64_t>(right));
+}
+__host__ __device__ constexpr OutputType operator|(const OutputType &left, const ExperimentalOutputType &right) {
+	return static_cast<OutputType>(static_cast<uint64_t>(left) | static_cast<uint64_t>(right));
+}
+__host__ __device__ constexpr OutputType operator&(const ExperimentalOutputType &left, const OutputType &right) {
+	return static_cast<OutputType>(static_cast<uint64_t>(left) & static_cast<uint64_t>(right));
+}
+__host__ __device__ constexpr OutputType operator|(const ExperimentalOutputType &left, const OutputType &right) {
+	return static_cast<OutputType>(static_cast<uint64_t>(left) | static_cast<uint64_t>(right));
+}
 
 /* =================================================================================================================== */
 

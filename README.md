@@ -63,7 +63,19 @@ The compiler may print warnings akin to `Stack size for entry function '_Z11biom
 ```
 As mentioned in step 2, the program's runtime can vary wildly based on one's input data and its comprehensiveness. Nevertheless, if all goes well, a file should ultimately be created (or a list should be printed to the screen, depending on your settings) containing your possible <!-- worldseeds --> structure seeds.
 
-When checking the outputted worldseeds, any generated trees may not match your input data: tree generation depends on the order that chunks are loaded, so if the chunks are loaded in a different order than your input data's source, a different pattern of trees will form. However, in most cases at least a few trees will match your input data; if *every* tree is different, that is an indication your original input data (or this tool) are likely wrong.
+8. At some point, this program will also automatically filter structure seeds into potential worldseeds. This hasn't been implemented yet, though, so in the meantime one must perform this filtering manually.
+    1. Download and open [Cubiomes Viewer](https://github.com/Cubitect/cubiomes-viewer/releases).
+    2. Under the Edit tab in the upper top-left, click "Advanced World Settings" and make sure "Enable experimentally supported versions" is enabled.
+    3. Close the World Settings menu and set the "MC" input box in the top-left corner to your world's version (or the supported version closest to it).
+    4. Under the Seed Generator heading, Click "Seed list", then use the button across from the "Load 48-bit seed list" option to select whichever file contains this program's outputted structure seeds.
+    5. For each population chunk in your input data (these will have been displayed when <ins>this</ins> program first began running):
+        - Under the Conditions heading, click "Add".
+        - Select "Biomes" for the condition's category and "Overworld at scale" as the condition's type.
+        - Select Custom for the location and enter the population chunk's coordinate range.
+        - Select "1:1 ..." for the Scale/Generation Layer, then exclude all biomes except the population chunk's biome.
+    6. When finished adding all conditions, click "Start search" at the bottom of the window. The program will then start outputting worldseeds that have biomes matching your input data.
+
+WARNING: When checking the outputted worldseeds, some generated trees may not match your input data. (Tree generation depends on the order that chunks are loaded, so if the chunks are loaded in a different order than your input data's source, a different pattern of trees will form.) However, in most cases at least a few trees will match your input data; if *every* tree is different, that is an indication your original input data (or this tool) are likely wrong.
 
 ## Acknowledgements
 I would like to give very large Thank You's to
@@ -73,7 +85,7 @@ I would like to give very large Thank You's to
 - [Edd](https://github.com/humhue), for helping considerably with Epic10l2's guide, and for answering a few questions about 1.12.2- population reversal.
 - [Neil](https://github.com/hube12), for finding and listing most tree salts ([1.13](https://gist.github.com/hube12/574512a3c4df2be8ba6c08e7298caedd), [1.14](https://gist.github.com/hube12/394ddf11b3cdcc9504270777565446e4), [1.15](https://gist.github.com/hube12/821b66615a97a7130ef804603d68bec8), [1.16](https://gist.github.com/hube12/b65500cd234ce2a3983b62b3903c183d), [1.17](https://gist.github.com/hube12/5066fbcd8565648dd68113a9b065514b)).
 - [Chaos4669](https://youtube.com/@Chaotic4669), for providing test data and recommendations on what could benefit from clarification.
-- [Cubitect](https://github.com/cubitect), for his [Cubiomes library](https://github.com/Cubitect/cubiomes) that this program (will ultimately) use a port of to filter biomes.
+- [Cubitect](https://github.com/cubitect), for his [Cubiomes library](https://github.com/Cubitect/cubiomes) that this program (will ultimately) use a port of to filter biomes, and his [Cubiomes Viewer](https://github.com/Cubitect/cubiomes-viewer) GUI tool I recommend as a substitute in the meantime.
 - [Panda4994](https://github.com/panda4994), for [his algorithm]((https://github.com/Panda4994/panda4994.github.io/blob/48526d35d3d38750102b9f360dff45a4bdbc50bd/seedinfo/js/Random.js#L16)) to determine if a state is derivable from a nextLong call.
 
 If you would like to contribute to this repository or report any bugs, please feel free to open an issue or a pull request.

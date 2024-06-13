@@ -3,17 +3,16 @@
 
 #include "../Allowed Values for Settings.cuh"
 
-// Worldseed: 123456789
-// Structure seed: 123456789
+// Worldseed: 183641714761759341 (and 106 others)
+// Structure seed: 120029946411629 or 169058901733005
 // Treechunk seed: ??
-// TODO: UNVERIFIED
 __device__ constexpr InputData TEST_DATA_16_4_1[] = {
     {
 		Version::v1_16_4,
-		TreeType::Birch,
-		Coordinate(4, -22),
+		TreeType::Oak,
+		Coordinate(-64, -178),
 		Biome::Forest,    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
-		PossibleHeightsRange(6), // The height of the tree's trunk (i.e. the number of logs it has). (Should be in the range [4,6] for Oak or [5,7] for Birch.)
+		PossibleHeightsRange(5), // The height of the tree's trunk (i.e. the number of logs it has). (Should be in the range [4,6] for Oak or [5,7] for Birch.)
 
 		std::array<LeafState, NUMBER_OF_LEAF_POSITIONS>({
 			// Lowest y-level:

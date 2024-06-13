@@ -27,7 +27,7 @@ struct LCG {
 		LCG lcg_pow(LCG::MULTIPLIER, LCG::ADDEND);
 
 		for (uint64_t lowerBits = 0; lowerBits < 48; lowerBits++) {
-			if (skip & (UINT64_C(1) << lowerBits)) lcg.combine(lcg_pow);
+			if (skip & twoToThePowerOf(lowerBits)) lcg.combine(lcg_pow);
 			lcg_pow.combine(lcg_pow);
 		}
 
@@ -95,6 +95,58 @@ struct Random {
 		this->seed = (this->seed * lcg.multiplier + lcg.addend) & LCG::MASK;
 		return *this;
 	}
+	__host__ __device__ Random &skip(const int64_t n) noexcept {
+		// NelS: SURELY there must be a better way to do this.
+		if (n & twoToThePowerOf(47)) this->skip<twoToThePowerOf(47)>();
+		if (n & twoToThePowerOf(46)) this->skip<twoToThePowerOf(46)>();
+		if (n & twoToThePowerOf(45)) this->skip<twoToThePowerOf(45)>();
+		if (n & twoToThePowerOf(44)) this->skip<twoToThePowerOf(44)>();
+		if (n & twoToThePowerOf(43)) this->skip<twoToThePowerOf(43)>();
+		if (n & twoToThePowerOf(42)) this->skip<twoToThePowerOf(42)>();
+		if (n & twoToThePowerOf(41)) this->skip<twoToThePowerOf(41)>();
+		if (n & twoToThePowerOf(40)) this->skip<twoToThePowerOf(40)>();
+		if (n & twoToThePowerOf(39)) this->skip<twoToThePowerOf(39)>();
+		if (n & twoToThePowerOf(38)) this->skip<twoToThePowerOf(38)>();
+		if (n & twoToThePowerOf(37)) this->skip<twoToThePowerOf(37)>();
+		if (n & twoToThePowerOf(36)) this->skip<twoToThePowerOf(36)>();
+		if (n & twoToThePowerOf(35)) this->skip<twoToThePowerOf(35)>();
+		if (n & twoToThePowerOf(34)) this->skip<twoToThePowerOf(34)>();
+		if (n & twoToThePowerOf(33)) this->skip<twoToThePowerOf(33)>();
+		if (n & twoToThePowerOf(32)) this->skip<twoToThePowerOf(32)>();
+		if (n & twoToThePowerOf(31)) this->skip<twoToThePowerOf(31)>();
+		if (n & twoToThePowerOf(30)) this->skip<twoToThePowerOf(30)>();
+		if (n & twoToThePowerOf(29)) this->skip<twoToThePowerOf(29)>();
+		if (n & twoToThePowerOf(28)) this->skip<twoToThePowerOf(28)>();
+		if (n & twoToThePowerOf(27)) this->skip<twoToThePowerOf(27)>();
+		if (n & twoToThePowerOf(26)) this->skip<twoToThePowerOf(26)>();
+		if (n & twoToThePowerOf(25)) this->skip<twoToThePowerOf(25)>();
+		if (n & twoToThePowerOf(24)) this->skip<twoToThePowerOf(24)>();
+		if (n & twoToThePowerOf(23)) this->skip<twoToThePowerOf(23)>();
+		if (n & twoToThePowerOf(22)) this->skip<twoToThePowerOf(22)>();
+		if (n & twoToThePowerOf(21)) this->skip<twoToThePowerOf(21)>();
+		if (n & twoToThePowerOf(20)) this->skip<twoToThePowerOf(20)>();
+		if (n & twoToThePowerOf(19)) this->skip<twoToThePowerOf(19)>();
+		if (n & twoToThePowerOf(18)) this->skip<twoToThePowerOf(18)>();
+		if (n & twoToThePowerOf(17)) this->skip<twoToThePowerOf(17)>();
+		if (n & twoToThePowerOf(16)) this->skip<twoToThePowerOf(16)>();
+		if (n & twoToThePowerOf(15)) this->skip<twoToThePowerOf(15)>();
+		if (n & twoToThePowerOf(14)) this->skip<twoToThePowerOf(14)>();
+		if (n & twoToThePowerOf(13)) this->skip<twoToThePowerOf(13)>();
+		if (n & twoToThePowerOf(12)) this->skip<twoToThePowerOf(12)>();
+		if (n & twoToThePowerOf(11)) this->skip<twoToThePowerOf(11)>();
+		if (n & twoToThePowerOf(10)) this->skip<twoToThePowerOf(10)>();
+		if (n & twoToThePowerOf( 9)) this->skip<twoToThePowerOf( 9)>();
+		if (n & twoToThePowerOf( 8)) this->skip<twoToThePowerOf( 8)>();
+		if (n & twoToThePowerOf( 7)) this->skip<twoToThePowerOf( 7)>();
+		if (n & twoToThePowerOf( 6)) this->skip<twoToThePowerOf( 6)>();
+		if (n & twoToThePowerOf( 5)) this->skip<twoToThePowerOf( 5)>();
+		if (n & twoToThePowerOf( 4)) this->skip<twoToThePowerOf( 4)>();
+		if (n & twoToThePowerOf( 3)) this->skip<twoToThePowerOf( 3)>();
+		if (n & twoToThePowerOf( 2)) this->skip<twoToThePowerOf( 2)>();
+		if (n & twoToThePowerOf( 1)) this->skip<twoToThePowerOf( 1)>();
+		if (n & twoToThePowerOf( 0)) this->skip<twoToThePowerOf( 0)>();
+		return *this;
+	}
 
 	template<int64_t N = 1>
 	// Returns the next min([bits], 32)-bit integer, optionally skipping N states first.
@@ -118,7 +170,7 @@ struct Random {
 		uint32_t m = bound - 1;
 		if (!(bound & m)) r = static_cast<uint32_t>((static_cast<uint64_t>(bound) * static_cast<uint64_t>(r)) >> 31);
 		else {
-			for (uint32_t u = r; static_cast<int32_t>(u - (r = u % bound) + m) < 0; u = this->next<1>(31));
+			for (uint32_t u = r; static_cast<int32_t>(u - (r = u % bound) + m) < 0; u = this->next(31));
 		}
 		return r;
 	}
@@ -138,7 +190,7 @@ struct Random {
 	// The Random instance will be advanced twice.
 	__host__ __device__ uint64_t nextLong() noexcept {
 		uint32_t a = this->next<N>(32);
-		uint32_t b = this->next<1>(32);
+		uint32_t b = this->next(32);
 		return (static_cast<uint64_t>(a) << 32) + static_cast<uint64_t>(static_cast<int32_t>(b));
 	}
 
@@ -161,7 +213,7 @@ struct Random {
 	// The Random instance will be advanced twice.
 	__host__ __device__ double nextDouble() noexcept {
 		uint32_t a = this->next<N>(26);
-		uint32_t b = this->next<1>(27);
+		uint32_t b = this->next(27);
 		return static_cast<double>((static_cast<uint64_t>(a) << 27) + static_cast<uint64_t>(b)) * 0x1.0p-53;
 	}
 

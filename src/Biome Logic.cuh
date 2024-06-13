@@ -4,8 +4,9 @@
 #include "Settings and Input Data Processing.cuh"
 #include "cudabiomes/generator.cuh"
 
-__managed__ uint64_t totalWorldseedsPerRun = 0;
-__managed__ int32_t largeBiomesFlag; // Yes, int, not bool (to make iterating easier).
+__managed__ uint64_t totalWorldseedsThisWorkerSet = 0;
+uint64_t totalWorldseedsThisRun = 0;
+__managed__ int32_t largeBiomesFlag; // Int, not bool, to make iterating easier.
 
 // The returned value from Cubiomes' getMinCacheSize() under the specified version and large biomes state.
 __device__ [[nodiscard]] constexpr size_t getIDsArraySize(const Version version, const bool largeBiomes) {
@@ -40,7 +41,7 @@ __device__ [[nodiscard]] constexpr int versionToCubiomesVersion(const Version ve
 		case Version::v1_14_4: return MCVersion::MC_1_14_4;
 		case Version::v1_16_1: return MCVersion::MC_1_16_1;
 		case Version::v1_16_4: return MCVersion::MC_1_16_5;
-		case Version::v1_17_1: return MCVersion::MC_1_17_1;
+		case static_cast<Version>(ExperimentalVersion::v1_17_1): return MCVersion::MC_1_17_1;
 		default: THROW_EXCEPTION(MCVersion::MC_UNDEF, "ERROR: Unsupported version provided.\n");
 	}
 }

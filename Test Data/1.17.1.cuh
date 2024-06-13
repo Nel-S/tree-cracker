@@ -9,7 +9,7 @@
 // VERIFIED
 __device__ constexpr InputData TEST_DATA_17_1_1[] = {
     {
-		Version::v1_17_1,
+		static_cast<Version>(ExperimentalVersion::v1_17_1),
 		TreeType::Oak,
 		Coordinate(13, -41),
 		Biome::Forest, // Should be Forest for Oak or Forest/Birch Forest for Birch.
@@ -34,7 +34,7 @@ __device__ constexpr InputData TEST_DATA_17_1_1[] = {
 		})
 	},
 	{
-		Version::v1_17_1,
+		static_cast<Version>(ExperimentalVersion::v1_17_1),
 		TreeType::Oak,
 		Coordinate(20, -45),
 		Biome::Forest, // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
@@ -59,14 +59,14 @@ __device__ constexpr InputData TEST_DATA_17_1_1[] = {
 		})
 	},
 	{
-		Version::v1_17_1, // (Should be 1.6.4- or 1.12.2+.)
+		static_cast<Version>(ExperimentalVersion::v1_17_1), // (Should be 1.6.4- or 1.12.2+.)
 		TreeType::Fancy_Oak,
 		Coordinate(20, -48),
 		Biome::Forest,       // (Should be Forest.)
 		PossibleHeightsRange(7), // The height of the tree's trunk (i.e. the number of logs it has). (Should be in the range [3,14].)
 	},
 	{
-		Version::v1_17_1,
+		static_cast<Version>(ExperimentalVersion::v1_17_1),
 		TreeType::Oak,
 		Coordinate(20, -51),
 		Biome::Forest,    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
@@ -91,7 +91,7 @@ __device__ constexpr InputData TEST_DATA_17_1_1[] = {
 		})
 	},
 	{
-		Version::v1_17_1,
+		static_cast<Version>(ExperimentalVersion::v1_17_1),
 		TreeType::Birch,
 		Coordinate(17, -55),
 		Biome::Forest,    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
@@ -116,7 +116,7 @@ __device__ constexpr InputData TEST_DATA_17_1_1[] = {
 		})
 	},
 	{
-		Version::v1_17_1,
+		static_cast<Version>(ExperimentalVersion::v1_17_1),
 		TreeType::Oak,
 		Coordinate(14, -53),
 		Biome::Forest,    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
@@ -141,7 +141,7 @@ __device__ constexpr InputData TEST_DATA_17_1_1[] = {
 		})
 	},
 	{
-		Version::v1_17_1,
+		static_cast<Version>(ExperimentalVersion::v1_17_1),
 		TreeType::Birch,
 		Coordinate(23, -55),
 		Biome::Forest,    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
@@ -173,7 +173,7 @@ __device__ constexpr InputData TEST_DATA_17_1_1[] = {
 // Treechunk seed: ??
 __device__ constexpr InputData TEST_DATA_17_1_2[] = {
     {
-		Version::v1_17_1,
+		static_cast<Version>(ExperimentalVersion::v1_17_1),
 		TreeType::Birch,
 		Coordinate(-856, 1472),
 		static_cast<Biome>(ExperimentalBiome::Birch_Forest), // Should be Forest for Oak or Forest/Birch Forest for Birch.
@@ -198,7 +198,7 @@ __device__ constexpr InputData TEST_DATA_17_1_2[] = {
 		})
 	},
 	{
-		Version::v1_17_1,
+		static_cast<Version>(ExperimentalVersion::v1_17_1),
 		TreeType::Birch,
 		Coordinate(-855, 1467),
 		static_cast<Biome>(ExperimentalBiome::Birch_Forest), // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
@@ -223,7 +223,7 @@ __device__ constexpr InputData TEST_DATA_17_1_2[] = {
 		})
 	},
 	{
-		Version::v1_17_1,
+		static_cast<Version>(ExperimentalVersion::v1_17_1),
 		TreeType::Birch,
 		Coordinate(-858, 1466),
 		static_cast<Biome>(ExperimentalBiome::Birch_Forest),    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
@@ -248,7 +248,7 @@ __device__ constexpr InputData TEST_DATA_17_1_2[] = {
 		})
 	},
 	{
-		Version::v1_17_1,
+		static_cast<Version>(ExperimentalVersion::v1_17_1),
 		TreeType::Birch,
 		Coordinate(-861, 1463),
 		static_cast<Biome>(ExperimentalBiome::Birch_Forest),    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
@@ -273,7 +273,7 @@ __device__ constexpr InputData TEST_DATA_17_1_2[] = {
 		})
 	},
 	{
-		Version::v1_17_1,
+		static_cast<Version>(ExperimentalVersion::v1_17_1),
 		TreeType::Birch,
 		Coordinate(-853, 1462),
 		static_cast<Biome>(ExperimentalBiome::Birch_Forest),    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
@@ -298,7 +298,7 @@ __device__ constexpr InputData TEST_DATA_17_1_2[] = {
 		})
 	},
 	{
-		Version::v1_17_1,
+		static_cast<Version>(ExperimentalVersion::v1_17_1),
 		TreeType::Birch,
 		Coordinate(-854, 1459),
 		static_cast<Biome>(ExperimentalBiome::Birch_Forest),    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
@@ -330,7 +330,7 @@ __device__ constexpr InputData TEST_DATA_17_1_2[] = {
 // Treechunk seed: ??
 __device__ constexpr InputData TEST_DATA_17_1_3[] = {
     {
-		Version::v1_17_1,
+		static_cast<Version>(ExperimentalVersion::v1_17_1),
 		TreeType::Birch,
 		Coordinate(-856, 1472),
 		static_cast<Biome>(ExperimentalBiome::Birch_Forest), // Should be Forest for Oak or Forest/Birch Forest for Birch.
@@ -355,7 +355,7 @@ __device__ constexpr InputData TEST_DATA_17_1_3[] = {
 		})
 	},
 	{
-		Version::v1_17_1,
+		static_cast<Version>(ExperimentalVersion::v1_17_1),
 		TreeType::Birch,
 		Coordinate(-855, 1467),
 		static_cast<Biome>(ExperimentalBiome::Birch_Forest), // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
@@ -380,7 +380,7 @@ __device__ constexpr InputData TEST_DATA_17_1_3[] = {
 		})
 	},
 	{
-		Version::v1_17_1,
+		static_cast<Version>(ExperimentalVersion::v1_17_1),
 		TreeType::Birch,
 		Coordinate(-858, 1466),
 		static_cast<Biome>(ExperimentalBiome::Birch_Forest),    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
@@ -406,7 +406,7 @@ __device__ constexpr InputData TEST_DATA_17_1_3[] = {
 		})
 	},
 	{
-		Version::v1_17_1,
+		static_cast<Version>(ExperimentalVersion::v1_17_1),
 		TreeType::Birch,
 		Coordinate(-861, 1463),
 		static_cast<Biome>(ExperimentalBiome::Birch_Forest),    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
@@ -431,7 +431,7 @@ __device__ constexpr InputData TEST_DATA_17_1_3[] = {
 		})
 	},
 	{
-		Version::v1_17_1,
+		static_cast<Version>(ExperimentalVersion::v1_17_1),
 		TreeType::Birch,
 		Coordinate(-853, 1462),
 		static_cast<Biome>(ExperimentalBiome::Birch_Forest),    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
@@ -456,7 +456,7 @@ __device__ constexpr InputData TEST_DATA_17_1_3[] = {
 		})
 	},
 	{
-		Version::v1_17_1,
+		static_cast<Version>(ExperimentalVersion::v1_17_1),
 		TreeType::Birch,
 		Coordinate(-854, 1459),
 		static_cast<Biome>(ExperimentalBiome::Birch_Forest),    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)
@@ -481,7 +481,7 @@ __device__ constexpr InputData TEST_DATA_17_1_3[] = {
 		})
 	},
 	{
-		Version::v1_17_1,
+		static_cast<Version>(ExperimentalVersion::v1_17_1),
 		TreeType::Birch,
 		Coordinate(-860, 1457),
 		static_cast<Biome>(ExperimentalBiome::Birch_Forest),    // (Should be Forest for Oak or Forest/Birch Forest for Birch.)

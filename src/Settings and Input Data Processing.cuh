@@ -6,10 +6,6 @@
 
 __managed__ uint32_t currentPopulationChunkDataIndex = 0;
 
-__host__ __device__ constexpr const char *getPlural(const int32_t val) noexcept {
-	return val == 1 ? "" : "s";
-}
-
 // Returns the specfied biome as a string.
 __host__ __device__ constexpr const char *toString(const Biome biome) {
 	switch (biome) {
@@ -29,7 +25,7 @@ __host__ __device__ constexpr const char *toString(const Version version) {
 		case Version::v1_14_4: return "1.14.4";
 		case Version::v1_16_1: return "1.16.1";
 		case Version::v1_16_4: return "1.16.4";
-		case Version::v1_17_1: return "1.17.1";
+		case static_cast<Version>(ExperimentalVersion::v1_17_1): return "1.17.1";
 		default: THROW_EXCEPTION("", "ERROR: Unsupported version provided.\n");
 	}
 }
@@ -292,7 +288,7 @@ struct SetOfTreeChunks {
 // __device__ constexpr SetOfTreeChunks ABSOLUTE_POPULATION_CHUNKS_DATA = RELATIVE_POPULATION_CHUNKS_DATA.possibleSetsOfTreeChunks[0];
 __device__ constexpr SetOfTreeChunks ABSOLUTE_POPULATION_CHUNKS_DATA(INPUT_DATA, sizeof(INPUT_DATA)/sizeof(*INPUT_DATA));
 
-struct Tuple {
+struct DoubleStorage {
 	uint64_t structureSeedIndex, treechunkSeed;
 };
 // constexpr Position VECTOR_1 = {24667315./16., -4824621./16.};
@@ -322,16 +318,16 @@ constexpr uint64_t ACTUAL_WORKERS_PER_BLOCK = constexprMin(WORKERS_PER_BLOCK, NU
 
 /* There are 2^48 possible internal Random states.
    If RELATIVE_COORDINATES_MODE is false, the first four bits of it directly correspond to the first tree's x-offset within the population chunk, so that limits the possibilities to 2^44.*/
-constexpr uint64_t TOTAL_NUMBER_OF_STATES_TO_CHECK = UINT64_C(1) << (44 + 4*static_cast<int32_t>(RELATIVE_COORDINATES_MODE));
-// constexpr uint64_t TOTAL_NUMBER_OF_STATES_TO_CHECK = RELATIVE_COORDINATES_MODE ? UINT64_C(1) << 48 : static_cast<uint64_t>(PARALLELOGRAM_SIZE.x) * PARALLELOGRAM_SIZE.z;
+constexpr uint64_t TOTAL_NUMBER_OF_STATES_TO_CHECK = twoToThePowerOf(44 + 4*static_cast<uint32_t>(RELATIVE_COORDINATES_MODE));
+// constexpr uint64_t TOTAL_NUMBER_OF_STATES_TO_CHECK = RELATIVE_COORDINATES_MODE ? twoToThePowerOf(48) : static_cast<uint64_t>(PARALLELOGRAM_SIZE.x) * PARALLELOGRAM_SIZE.z;
 /* One one hand, the first filter finds all internal states that can generate the tree with the most number of bits of information.
    Therefore for a tree with k bits of information, we can expect there to be around 2^(48 - k) results, or 2^(48 - k)/ACTUAL_NUMBER_OF_PARTIAL_RUNS results per run.
    On the other hand, during each iteration we're only actually analyzing at most NUMBER_OF_WORKERS*(getHighestMaxCalls() + 1)*(1 << getHighestMaxTreeCount()) entries.
    Therefore the expected number of results we'll need space for is simply the minimum of those two expressions, which is then doubled to provide some leeway just in case.
    (Note: this does not currently take into account the fact that 65536 worldseeds correspond to each ultimate structure seed, since then we'd need to make this 65536x larger and I suspect the structure seeds will be filtered enough to render that unnecessary.)*/
-constexpr uint64_t RECOMMENDED_RESULTS_PER_RUN = 2*constexprMin((UINT64_C(1) << (48 - static_cast<uint32_t>(ABSOLUTE_POPULATION_CHUNKS_DATA.treeChunks[0].treePositions[0].getEstimatedBits(ABSOLUTE_POPULATION_CHUNKS_DATA.treeChunks[0].biome, ABSOLUTE_POPULATION_CHUNKS_DATA.treeChunks[0].version) - 0.5)))/ACTUAL_NUMBER_OF_PARTIAL_RUNS, NUMBER_OF_WORKERS*(ABSOLUTE_POPULATION_CHUNKS_DATA.getHighestMaxCalls() + 1)*(UINT64_C(1) << ABSOLUTE_POPULATION_CHUNKS_DATA.getHighestMaxTreeCount()));
-// NVCC error C2148 places a hard limit of 0x7fffffff bytes per array, while the largest-information array we'll be using is Tuple.
-constexpr uint64_t MOST_POSSIBLE_RESULTS_PER_RUN = constexprMin(static_cast<uint64_t>(constexprCeil(static_cast<double>(TOTAL_NUMBER_OF_STATES_TO_CHECK)/static_cast<double>(ACTUAL_NUMBER_OF_PARTIAL_RUNS))), 0x7fffffff/sizeof(Tuple));
+constexpr uint64_t RECOMMENDED_RESULTS_PER_RUN = 2*constexprMin((twoToThePowerOf(48 - static_cast<uint32_t>(ABSOLUTE_POPULATION_CHUNKS_DATA.treeChunks[0].treePositions[0].getEstimatedBits(ABSOLUTE_POPULATION_CHUNKS_DATA.treeChunks[0].biome, ABSOLUTE_POPULATION_CHUNKS_DATA.treeChunks[0].version) - 0.5)))/ACTUAL_NUMBER_OF_PARTIAL_RUNS, NUMBER_OF_WORKERS*(ABSOLUTE_POPULATION_CHUNKS_DATA.getHighestMaxCalls() + 1)*twoToThePowerOf(ABSOLUTE_POPULATION_CHUNKS_DATA.getHighestMaxTreeCount()));
+// NVCC error C2148 places a hard limit of 0x7fffffff bytes per array, while the largest-information array we'll be using is DoubleStorage.
+constexpr uint64_t MOST_POSSIBLE_RESULTS_PER_RUN = constexprMin(static_cast<uint64_t>(constexprCeil(static_cast<double>(TOTAL_NUMBER_OF_STATES_TO_CHECK)/static_cast<double>(ACTUAL_NUMBER_OF_PARTIAL_RUNS))), 0x7fffffff/sizeof(DoubleStorage));
 constexpr uint64_t ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN = constexprMin(MAX_NUMBER_OF_RESULTS_PER_RUN ? MAX_NUMBER_OF_RESULTS_PER_RUN : RECOMMENDED_RESULTS_PER_RUN, MOST_POSSIBLE_RESULTS_PER_RUN);
 
 
@@ -341,11 +337,11 @@ struct ThreadData {
 };
 #endif
 
-// TODO: How much slower would the program run if Tuple storages were used for everything?
+// TODO: How much slower would the program run if DoubleStorage storages were used for everything?
 __managed__ uint64_t filterStorageA[ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN];
 __device__ uint64_t filterStorageB[ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN]; // To prevent new results from accidentally erasing the old inputs mid-filter
-__device__ Tuple filterDoubleStorageA[ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN];
-__device__ Tuple filterDoubleStorageB[ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN]; // To prevent new results from accidentally erasing the old inputs mid-filter
+__device__ DoubleStorage filterDoubleStorageA[ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN];
+__device__ DoubleStorage filterDoubleStorageB[ACTUAL_MAX_NUMBER_OF_RESULTS_PER_RUN]; // To prevent new results from accidentally erasing the old inputs mid-filter
 
 void printSettingsAndDataWarnings() noexcept {
 	if (SILENT_MODE) return;
@@ -370,9 +366,11 @@ void printSettingsAndDataWarnings() noexcept {
 		if (inputDataHighestPopulationChunkBits < 48.) std::fprintf(stderr, "\n\nWARNING: The input data's highest-information population chunk very likely does not have enough information to reduce the search space to a single treechunk seed by itself (%.2g/48 bits).\nOther chunks will be used later to filter the possibilities, but this program will run faster and use less memory if you gather more data and only afterwards run the program.\n", inputDataHighestPopulationChunkBits);
 	}
 
-	if (ABSOLUTE_POPULATION_CHUNKS_DATA.treeChunks[0].version <= static_cast<Version>(ExperimentalVersion::v1_12_2)) {
+	if (ABSOLUTE_POPULATION_CHUNKS_DATA.treeChunks[0].version <= static_cast<Version>(ExperimentalVersion::v1_12_2) && static_cast<uint32_t>(TYPES_TO_OUTPUT) > 2*static_cast<uint32_t>(ExperimentalOutputType::Highest_Information_Treechunk_Seeds) - 1) {
 		if (ABSOLUTE_POPULATION_CHUNKS_DATA.numberOfTreeChunks == 1) std::fprintf(stderr, "WARNING: Filtering solely based on a single treechunk present in version 1.12 or earlier will produce (on average) 10000 structure seeds per treechunk seed (equivalent to 655 million worldseeds per treechunk seed, at worst). It is VERY HIGHLY recommended you gather data from multiple population chunks before running the program.\n");
 		else std::fprintf(stderr, "NOTE: Filtering solely based on treechunks present in versions 1.12 or earlier may result in tens of thousands of structure seeds. Other treechunks will be used to narrow down the results, but one should still prepare for that worst-case possibility.\n");
+		// TODO: Replace with forcibly creating a file (name generated by std::tmpnam())
+		if (OUTPUT_FILEPATH == NULL || OUTPUT_FILEPATH == "") std::fprintf(stderr, "WARNING: More structure seeds will be outputted than will likely fit on your screen. It is VERY HIGHLY recommended you specify a filepath before running the program.\n");
 	}
 
 	std::fprintf(stderr, "\n");
